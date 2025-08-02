@@ -71,6 +71,20 @@ export default function NoteEditorScreen() {
   useEffect(() => {
     if (noteId) {
       loadNote();
+    } else {
+      // Reset note state for new note creation
+      setNote({
+        id: null,
+        title: "",
+        content: "",
+        tags: [],
+        priority: "medium",
+        reminderEnabled: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isArchived: false,
+        isFavorite: false,
+      });
     }
   }, [noteId, notes]);
 
@@ -119,6 +133,7 @@ export default function NoteEditorScreen() {
     try {
       if (!note.title.trim()) {
         Alert.alert('Error', 'Please enter a title for your note.');
+        setSaving(false);
         return;
       }
 
@@ -132,18 +147,26 @@ export default function NoteEditorScreen() {
         tags: note.tags.join(','),
       };
       
-      if (note.id) {
-        // Update existing note
-        await updateNote(note.id, noteData);
-        Alert.alert('Success', 'Note updated successfully!');
-      } else {
-        // Create new note
-        await createNote(noteData);
-        Alert.alert('Success', 'Note created successfully!');
+      try {
+        if (note.id) {
+          // Update existing note
+          await updateNote(note.id, noteData);
+          Alert.alert('Success', 'Note updated successfully!', [
+            { text: 'OK', onPress: () => router.replace('/') }
+          ]);
+        } else {
+          // Create new note
+          await createNote(noteData);
+          Alert.alert('Success', 'Note created successfully!', [
+            { text: 'OK', onPress: () => router.replace('/') }
+          ]);
+        }
+      } catch (innerError) {
+        console.error('Database operation failed:', innerError);
+        Alert.alert('Error', 'Database operation failed. Please try again.');
+        setSaving(false);
+        return;
       }
-      
-      // Navigate back to notes screen
-      router.replace('/');
     } catch (error) {
       console.error('Error saving note:', error);
       Alert.alert('Error', 'Failed to save note. Please try again.');
@@ -209,11 +232,12 @@ export default function NoteEditorScreen() {
           onPress: async () => {
             try {
               await deleteNote(note.id!);
-              Alert.alert('Success', 'Note deleted successfully!');
-              router.replace('/');
+              Alert.alert('Success', 'Note deleted successfully!', [
+                { text: 'OK', onPress: () => router.replace('/') }
+              ]);
             } catch (error) {
               console.error('Error deleting note:', error);
-              Alert.alert('Error', 'Failed to delete note.');
+              Alert.alert('Error', 'Failed to delete note. Please try again.');
             }
           },
         },
@@ -223,6 +247,11 @@ export default function NoteEditorScreen() {
 
   const handleCreateCategory = async (newCategory: any) => {
     try {
+      if (!newCategory.name || !newCategory.color) {
+        Alert.alert('Error', 'Category name and color are required.');
+        return;
+      }
+
       const categoryId = await createCategory({
         name: newCategory.name,
         color: newCategory.color,
@@ -239,7 +268,7 @@ export default function NoteEditorScreen() {
       setNote((prev) => ({ ...prev, category: categoryWithId }));
     } catch (error) {
       console.error('Error creating category:', error);
-      Alert.alert('Error', 'Failed to create category.');
+      Alert.alert('Error', 'Failed to create category. Please try again.');
     }
   };
 

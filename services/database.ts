@@ -33,7 +33,7 @@ export interface Reminder {
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
-  private isWeb: boolean = Platform.OS === 'web';
+  public isWeb: boolean = Platform.OS === 'web';
   private webNotes: Note[] = [];
   private webCategories: Category[] = [];
   private nextNoteId: number = 1;

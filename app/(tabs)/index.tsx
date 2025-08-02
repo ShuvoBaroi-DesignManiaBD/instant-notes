@@ -36,7 +36,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [refreshNotes]);
 
-  const handleDeleteNote = async (noteId: string) => {
+  const handleDeleteNote = async (noteId: string | number) => {
     Alert.alert(
       'Delete Note',
       'Are you sure you want to delete this note?',
@@ -47,7 +47,8 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteNote(parseInt(noteId));
+              const id = typeof noteId === 'string' ? parseInt(noteId) : noteId;
+              await deleteNote(id);
             } catch (error) {
               console.error('Error deleting note:', error);
               Alert.alert('Error', 'Failed to delete note');
@@ -95,84 +96,104 @@ export default function HomeScreen() {
         style={[styles.noteCard, { backgroundColor: theme.colors.surface }]}
         onPress={() => router.push(`note-editor?noteId=${note.id}`)}
       >
-        <Card.Content>
+        <Card.Content style={styles.cardContent}>
+          {/* Card Header with Title and Delete Button */}
           <View style={styles.noteHeader}>
             <Title style={styles.noteTitle} numberOfLines={1}>
               {note.title}
             </Title>
-            <View style={styles.noteActions}>
-              <IconButton
-                icon="delete"
-                size={20}
-                onPress={() => handleDeleteNote(note.id.toString())}
-                style={styles.deleteButton}
-              />
-            </View>
+            <IconButton
+              icon="delete"
+              size={20}
+              onPress={() => handleDeleteNote(note.id.toString())}
+              style={styles.deleteButton}
+            />
           </View>
 
+          {/* Note Content Preview */}
           <Paragraph numberOfLines={2} style={styles.noteContent}>
             {note.content}
           </Paragraph>
 
-          {/* Tags Section */}
-          {tags.length > 0 && (
-            <View style={styles.tagsRow}>
-              {tags.slice(0, 3).map((tag, index) => (
-                <Chip key={`${note.id}-${index}`} compact style={styles.tagChip}>
-                  {tag}
-                </Chip>
-              ))}
-              {tags.length > 3 && (
-                <Text style={styles.moreTagsText}>+{tags.length - 3}</Text>
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Bottom Card Section */}
+          <View style={styles.cardFooter}>
+            {/* Left Column: Category and Tags */}
+            <View style={styles.leftColumn}>
+              {/* Category Badge */}
+              {note.category_id && (
+                <View style={styles.categoryContainer}>
+                  <Ionicons name="folder-outline" size={14} color="#7B1FA2" />
+                  <Text style={styles.categoryText}>Category</Text>
+                </View>
+              )}
+
+              {/* Tags Section */}
+              {tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  <Ionicons name="pricetag-outline" size={14} color="#1976D2" />
+                  <View style={styles.tagsRow}>
+                    {tags.slice(0, 2).map((tag, index) => (
+                      <Text 
+                        key={`${note.id}-${index}`}
+                        style={styles.tagText}
+                      >
+                        {tag}{index < Math.min(tags.length, 2) - 1 ? ', ' : ''}
+                      </Text>
+                    ))}
+                    {tags.length > 2 && (
+                      <Text style={styles.moreTagsText}>+{tags.length - 2}</Text>
+                    )}
+                  </View>
+                </View>
               )}
             </View>
-          )}
 
-          {/* Metadata Row */}
-          <View style={styles.metadataRow}>
-            {/* Priority */}
-            <Chip
-              compact
-              style={[
-                styles.priorityChip,
-                {
-                  backgroundColor: priorityColors.bg,
-                },
-              ]}
-              textStyle={{ color: priorityColors.text, fontWeight: '600' }}
-              icon={
-                note.priority === "high"
-                  ? "flag"
-                  : note.priority === "medium"
-                  ? "flag-outline"
-                  : "flag-variant"
-              }
-            >
-              {note.priority.toUpperCase()}
-            </Chip>
-
-            {/* Deadline */}
-            {note.deadline && (
-              <Chip
-                icon="calendar-clock"
-                compact
+            {/* Right Column: Priority and Deadline */}
+            <View style={styles.rightColumn}>
+              {/* Priority Badge */}
+              <View 
                 style={[
-                  styles.deadlineChip,
-                  {
-                    backgroundColor: isOverdue 
-                      ? theme.colors.errorContainer 
-                      : theme.colors.primaryContainer,
-                  },
+                  styles.priorityBadge, 
+                  {backgroundColor: priorityColors.bg}
                 ]}
-                textStyle={{
-                  color: isOverdue 
-                    ? theme.colors.onErrorContainer 
-                    : theme.colors.onPrimaryContainer,
-                }}
               >
-                {new Date(note.deadline).toLocaleDateString()}
-              </Chip>
-            )}
+                <Ionicons 
+                  name={note.priority === "high" ? "alert-circle" : note.priority === "medium" ? "alert" : "checkmark-circle"} 
+                  size={12} 
+                  color={priorityColors.text} 
+                />
+                <Text style={[styles.priorityText, {color: priorityColors.text}]}>
+                  {note.priority.toUpperCase()}
+                </Text>
+              </View>
+
+              {/* Deadline Badge */}
+              {note.deadline && (
+                <View 
+                  style={[
+                    styles.deadlineBadge,
+                    {backgroundColor: isOverdue ? '#FFEBEE' : '#E8F5E8'}
+                  ]}
+                >
+                  <Ionicons 
+                    name="calendar-outline" 
+                    size={12} 
+                    color={isOverdue ? '#C62828' : '#2E7D32'} 
+                  />
+                  <Text 
+                    style={[
+                      styles.deadlineText,
+                      {color: isOverdue ? '#C62828' : '#2E7D32'}
+                    ]}
+                  >
+                    {new Date(note.deadline).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </Card.Content>
       </Card>
@@ -264,17 +285,18 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     marginVertical: 8,
-    elevation: 2,
+    elevation: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  cardContent: {
+    padding: 16,
   },
   noteHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
-  },
-  noteActions: {
-    flexDirection: "row",
-    alignItems: "center",
   },
   deleteButton: {
     margin: 0,
@@ -293,40 +315,85 @@ const styles = StyleSheet.create({
   noteTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   noteContent: {
     marginBottom: 12,
     lineHeight: 20,
+    opacity: 0.8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 12,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  leftColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 8,
+  },
+  rightColumn: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  categoryText: {
+    color: '#7B1FA2',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   tagsRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
     flexWrap: "wrap",
   },
-  tagChip: {
-    marginRight: 6,
-    marginBottom: 4,
+  tagText: {
+    color: '#1976D2',
+    fontSize: 12,
+    fontWeight: '500',
   },
   moreTagsText: {
     fontSize: 12,
-    opacity: 0.7,
+    color: '#757575',
     marginLeft: 4,
   },
-  metadataRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 8,
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
-  priorityChip: {
-    borderWidth: 1,
-    borderColor: 'transparent',
+  priorityText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
-  deadlineChip: {
-    borderWidth: 1,
-    borderColor: 'transparent',
+  deadlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  deadlineText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,

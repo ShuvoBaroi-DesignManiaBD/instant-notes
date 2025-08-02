@@ -5,6 +5,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import * as SQLite from 'expo-sqlite';
 import { databaseService, Note, Category } from "../services/database";
 
 interface DatabaseContextType {
@@ -82,7 +83,32 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
   const refreshCategories = async () => {
     try {
       const allCategories = await databaseService.getAllCategories();
-      setCategories(allCategories);
+      
+      // Add note count to each category
+      const categoriesWithCount = await Promise.all(
+        allCategories.map(async (category) => {
+          let noteCount = 0;
+          if (databaseService.isWeb) {
+            noteCount = notes.filter(note => note.category_id === category.id).length;
+          } else {
+            try {
+              // Use the existing database connection from databaseService instead of creating a new one
+              if (notes && notes.length > 0) {
+                noteCount = notes.filter(note => note.category_id === category.id).length;
+              }
+            } catch (error) {
+              console.error('Error counting notes for category:', error);
+            }
+          }
+          
+          return {
+            ...category,
+            noteCount
+          };
+        })
+      );
+      
+      setCategories(categoriesWithCount);
     } catch (error) {
       console.error("Failed to refresh categories:", error);
     }

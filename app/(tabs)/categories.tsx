@@ -15,49 +15,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDatabaseContext } from "../../contexts/DatabaseContext";
 
 interface Category {
-  id: string;
+  id: number;
   name: string;
   color: string;
-  icon?: string;
-  noteCount: number;
-  createdAt: Date;
+  icon: string;
+  noteCount?: number;
+  created_at: string;
 }
 
 export default function CategoriesScreen() {
   const theme = useTheme();
-  const { db } = useDatabaseContext();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { categories, isLoading, refreshCategories } = useDatabaseContext();
 
   useEffect(() => {
-    loadCategories();
+    refreshCategories();
   }, []);
-
-  const loadCategories = async () => {
-    if (!db) return;
-    setLoading(true);
-    try {
-      const result = await db.getAllAsync('SELECT * FROM categories ORDER BY name');
-      const categoriesWithCount = await Promise.all(
-        result.map(async (cat: any) => {
-          const countResult = await db.getFirstAsync(
-            'SELECT COUNT(*) as count FROM notes WHERE category LIKE ? AND isArchived = 0',
-            [`%"name":"${cat.name}"%`]
-          );
-          return {
-            ...cat,
-            noteCount: countResult?.count || 0,
-            createdAt: new Date(cat.createdAt),
-          };
-        })
-      );
-      setCategories(categoriesWithCount);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderCategoryCard = (category: Category) => {
     return (
@@ -88,8 +60,8 @@ export default function CategoriesScreen() {
               <View style={styles.categoryDetails}>
                 <Title style={styles.categoryTitle}>{category.name}</Title>
                 <Text style={styles.noteCount}>
-                  {category.noteCount}{" "}
-                  {category.noteCount === 1 ? "note" : "notes"}
+                  {category.noteCount || 0}{" "}
+                  {(category.noteCount || 0) === 1 ? "note" : "notes"}
                 </Text>
               </View>
             </View>
@@ -123,7 +95,7 @@ export default function CategoriesScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>All Categories</Text>
-          {loading ? (
+          {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" />
               <Text style={styles.loadingText}>Loading categories...</Text>

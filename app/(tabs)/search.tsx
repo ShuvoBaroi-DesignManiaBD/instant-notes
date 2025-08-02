@@ -10,8 +10,10 @@ import {
   Searchbar,
   Text,
   useTheme,
+  ActivityIndicator,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDatabaseContext } from "../../contexts/DatabaseContext";
 
 interface Note {
   id: string;
@@ -33,79 +35,12 @@ interface Category {
   noteCount: number;
 }
 
-const mockNotes: Note[] = [
-  {
-    id: "1",
-    title: "Welcome to Instant Notes",
-    content:
-      "This is your first note. You can edit, organize, and set reminders for your notes.",
-    tags: ["welcome", "tutorial"],
-    priority: "medium",
-    createdAt: new Date(Date.now() - 86400000),
-    updatedAt: new Date(),
-    isArchived: false,
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    title: "Meeting Notes - Q4 Planning",
-    content:
-      "Discussed quarterly goals, budget allocation, and team restructuring.",
-    tags: ["work", "meeting", "planning"],
-    priority: "high",
-    deadline: new Date(Date.now() + 604800000),
-    createdAt: new Date(Date.now() - 172800000),
-    updatedAt: new Date(Date.now() - 86400000),
-    isArchived: false,
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    title: "Recipe: Chocolate Chip Cookies",
-    content:
-      "Ingredients: flour, butter, sugar, chocolate chips, eggs, vanilla...",
-    tags: ["recipe", "baking", "dessert"],
-    priority: "low",
-    createdAt: new Date(Date.now() - 259200000),
-    updatedAt: new Date(Date.now() - 172800000),
-    isArchived: false,
-    isFavorite: true,
-  },
-  {
-    id: "4",
-    title: "Book Ideas",
-    content: "Collection of story concepts and character development notes.",
-    tags: ["creative", "writing", "ideas"],
-    priority: "medium",
-    createdAt: new Date(Date.now() - 345600000),
-    updatedAt: new Date(Date.now() - 259200000),
-    isArchived: false,
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    title: "Travel Itinerary - Japan",
-    content: "Day-by-day plan for Tokyo, Kyoto, and Osaka visit.",
-    tags: ["travel", "japan", "itinerary"],
-    priority: "high",
-    deadline: new Date(Date.now() + 2592000000),
-    createdAt: new Date(Date.now() - 432000000),
-    updatedAt: new Date(Date.now() - 345600000),
-    isArchived: false,
-    isFavorite: true,
-  },
-];
 
-const mockCategories: Category[] = [
-  { id: "1", name: "Work", color: "#2196F3", noteCount: 8 },
-  { id: "2", name: "Personal", color: "#4CAF50", noteCount: 12 },
-  { id: "3", name: "Ideas", color: "#FF9800", noteCount: 5 },
-  { id: "4", name: "Recipes", color: "#E91E63", noteCount: 3 },
-];
 
 export default function SearchScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { db } = useDatabaseContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
@@ -118,9 +53,12 @@ export default function SearchScreen() {
     "recipe",
     "travel",
   ]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Get all unique tags from notes
-  const allTags = Array.from(new Set(mockNotes.flatMap((note) => note.tags)));
+  useEffect(() => {
+    loadAllTags();
+  }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === "" && selectedTags.length === 0) {
@@ -128,32 +66,80 @@ export default function SearchScreen() {
       setFilteredCategories([]);
       return;
     }
-
-    // Filter notes
-    const noteResults = mockNotes.filter((note) => {
-      const matchesQuery =
-        searchQuery.trim() === "" ||
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.tags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.every((tag) => note.tags.includes(tag));
-
-      return matchesQuery && matchesTags;
-    });
-
-    // Filter categories
-    const categoryResults = mockCategories.filter((category) =>
-      category.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    setFilteredNotes(noteResults);
-    setFilteredCategories(categoryResults);
+    searchNotes();
   }, [searchQuery, selectedTags]);
+
+  const loadAllTags = async () => {
+    if (!db) return;
+    try {
+      const result = await db.getAllAsync(
+        'SELECT DISTINCT tags FROM notes WHERE tags IS NOT NULL AND tags != "[]"'
+      );
+      const tags = new Set<string>();
+      result.forEach((row: any) => {
+        if (row.tags) {
+          const noteTags = JSON.parse(row.tags);
+          noteTags.forEach((tag: string) => tags.add(tag));
+        }
+      });
+      setAllTags(Array.from(tags));
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
+
+  const searchNotes = async () => {
+    if (!db) return;
+    setLoading(true);
+    try {
+      let query = 'SELECT * FROM notes WHERE isArchived = 0';
+      const params: any[] = [];
+
+      if (searchQuery.trim()) {
+        query += ' AND (title LIKE ? OR content LIKE ?)';
+        const searchTerm = `%${searchQuery.trim()}%`;
+        params.push(searchTerm, searchTerm);
+      }
+
+      const result = await db.getAllAsync(query, params);
+      let notes = result.map((note: any) => ({
+        ...note,
+        tags: note.tags ? JSON.parse(note.tags) : [],
+        deadline: note.deadline ? new Date(note.deadline) : undefined,
+        createdAt: new Date(note.createdAt),
+        updatedAt: new Date(note.updatedAt),
+        isArchived: Boolean(note.isArchived),
+        isFavorite: Boolean(note.isFavorite),
+      }));
+
+      // Filter by selected tags
+      if (selectedTags.length > 0) {
+        notes = notes.filter((note: Note) =>
+          selectedTags.every((tag) => note.tags.includes(tag))
+        );
+      }
+
+      // Filter by search query in tags
+      if (searchQuery.trim()) {
+        notes = notes.filter((note: Note) =>
+          note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.tags.some((tag: string) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        );
+      }
+
+      setFilteredNotes(notes);
+      
+      // For categories, we'll keep it simple for now
+      setFilteredCategories([]);
+    } catch (error) {
+      console.error('Error searching notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

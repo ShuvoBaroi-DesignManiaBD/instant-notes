@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, TextInput, View, Switch } from "react-native";
+import { ScrollView, StyleSheet, TextInput, View, Switch, Alert } from "react-native";
 import {
   Appbar,
   Button,
@@ -11,14 +11,17 @@ import {
   Text,
   useTheme,
   Surface,
+  ActivityIndicator,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import RichTextEditor from "../../components/RichTextEditor";
 import DateTimePickerComponent from "../../components/DateTimePicker";
 import CategorySelector from "../../components/CategorySelector";
+import { useDatabaseContext } from "../../contexts/DatabaseContext";
+import { Note } from "../../services/database";
 
-interface Note {
-  id: string;
+interface LocalNote {
+  id: number | null;
   title: string;
   content: string;
   tags: string[];
@@ -27,7 +30,7 @@ interface Note {
   reminder?: Date;
   reminderEnabled: boolean;
   category?: {
-    id: string;
+    id: number;
     name: string;
     color: string;
     icon?: string;
@@ -42,9 +45,10 @@ export default function NoteEditorScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { noteId } = useLocalSearchParams();
+  const { notes, categories, createNote, updateNote, deleteNote, createCategory, refreshNotes } = useDatabaseContext();
 
-  const [note, setNote] = useState<Note>({
-    id: (noteId as string) || "new",
+  const [note, setNote] = useState<LocalNote>({
+    id: noteId ? parseInt(noteId as string) : null,
     title: "",
     content: "",
     tags: [],
@@ -61,39 +65,91 @@ export default function NoteEditorScreen() {
   const [tagInput, setTagInput] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
   const [priorityMenuVisible, setPriorityMenuVisible] = useState(false);
-  const [categories, setCategories] = useState([
-    { id: '1', name: 'Personal', color: '#FF6B6B', icon: 'account' },
-    { id: '2', name: 'Work', color: '#4ECDC4', icon: 'briefcase' },
-    { id: '3', name: 'Study', color: '#45B7D1', icon: 'school' },
-  ]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (noteId && noteId !== "new") {
-      // Load existing note - in real app, this would fetch from storage
-      const mockNote: Note = {
-        id: noteId as string,
-        title: "Welcome to Instant Notes",
-        content:
-          "This is your first note. You can edit, organize, and set reminders for your notes.\n\nFeatures:\n• Rich text editing\n• Categories and tags\n• Reminders and deadlines\n• Search functionality\n• Dark/light themes",
-        tags: ["welcome", "tutorial"],
-        priority: "medium",
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        reminderEnabled: true,
-        reminder: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        category: { id: '1', name: 'Personal', color: '#FF6B6B', icon: 'account' },
-        createdAt: new Date(Date.now() - 86400000),
-        updatedAt: new Date(),
-        isArchived: false,
-        isFavorite: true,
-      };
-      setNote(mockNote);
+    if (noteId) {
+      loadNote();
     }
-  }, [noteId]);
+  }, [noteId, notes]);
 
-  const saveNote = () => {
-    // In real app, save to storage
-    setNote((prev) => ({ ...prev, updatedAt: new Date() }));
-    setIsEditing(false);
+  const loadNote = async () => {
+    if (!noteId) return;
+    
+    setLoading(true);
+    try {
+      const existingNote = notes.find(n => n.id === parseInt(noteId as string));
+      
+      if (existingNote) {
+        const tags = existingNote.tags ? existingNote.tags.split(',').filter(tag => tag.trim()) : [];
+        const category = categories.find(c => c.id === existingNote.category_id);
+        
+        const loadedNote: LocalNote = {
+          id: existingNote.id,
+          title: existingNote.title,
+          content: existingNote.content,
+          tags: tags,
+          priority: existingNote.priority,
+          deadline: existingNote.deadline ? new Date(existingNote.deadline) : undefined,
+          reminder: existingNote.reminder ? new Date(existingNote.reminder) : undefined,
+          reminderEnabled: Boolean(existingNote.reminder),
+          category: category ? {
+            id: category.id,
+            name: category.name,
+            color: category.color,
+            icon: category.icon
+          } : undefined,
+          createdAt: new Date(existingNote.created_at),
+          updatedAt: new Date(existingNote.updated_at),
+          isArchived: false,
+          isFavorite: false,
+        };
+        setNote(loadedNote);
+      }
+    } catch (error) {
+      console.error('Error loading note:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveNote = async () => {
+    setSaving(true);
+    try {
+      if (!note.title.trim()) {
+        Alert.alert('Error', 'Please enter a title for your note.');
+        return;
+      }
+
+      const noteData = {
+        title: note.title,
+        content: note.content,
+        category_id: note.category?.id || 1, // Default to first category if none selected
+        priority: note.priority,
+        deadline: note.deadline?.toISOString() || '',
+        reminder: note.reminderEnabled && note.reminder ? note.reminder.toISOString() : '',
+        tags: note.tags.join(','),
+      };
+      
+      if (note.id) {
+        // Update existing note
+        await updateNote(note.id, noteData);
+        Alert.alert('Success', 'Note updated successfully!');
+      } else {
+        // Create new note
+        await createNote(noteData);
+        Alert.alert('Success', 'Note created successfully!');
+      }
+      
+      // Navigate back to notes screen
+      router.replace('/');
+    } catch (error) {
+      console.error('Error saving note:', error);
+      Alert.alert('Error', 'Failed to save note. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addTag = () => {
@@ -139,13 +195,52 @@ export default function NoteEditorScreen() {
     setNote((prev) => ({ ...prev, category }));
   };
 
-  const handleCreateCategory = (newCategory: any) => {
-    const categoryWithId = {
-      ...newCategory,
-      id: Date.now().toString(),
-    };
-    setCategories((prev) => [...prev, categoryWithId]);
-    setNote((prev) => ({ ...prev, category: categoryWithId }));
+  const handleDeleteNote = async () => {
+    if (!note.id) return;
+    
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteNote(note.id!);
+              Alert.alert('Success', 'Note deleted successfully!');
+              router.replace('/');
+            } catch (error) {
+              console.error('Error deleting note:', error);
+              Alert.alert('Error', 'Failed to delete note.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCreateCategory = async (newCategory: any) => {
+    try {
+      const categoryId = await createCategory({
+        name: newCategory.name,
+        color: newCategory.color,
+        icon: newCategory.icon || 'folder',
+      });
+      
+      const categoryWithId = {
+        id: categoryId,
+        name: newCategory.name,
+        color: newCategory.color,
+        icon: newCategory.icon || 'folder',
+      };
+      
+      setNote((prev) => ({ ...prev, category: categoryWithId }));
+    } catch (error) {
+      console.error('Error creating category:', error);
+      Alert.alert('Error', 'Failed to create category.');
+    }
   };
 
   const getCategoryBackgroundColor = (color: string) => {
@@ -204,7 +299,10 @@ export default function NoteEditorScreen() {
           />
           <Menu.Item
             leadingIcon="delete"
-            onPress={() => setMenuVisible(false)}
+            onPress={() => {
+              setMenuVisible(false);
+              handleDeleteNote();
+            }}
             title="Delete"
           />
         </Menu>
@@ -491,8 +589,10 @@ export default function NoteEditorScreen() {
             mode="contained"
             onPress={saveNote}
             style={styles.actionButton}
+            loading={saving}
+            disabled={saving}
           >
-            Save
+            {saving ? 'Saving...' : 'Save'}
           </Button>
         </View>
       )}

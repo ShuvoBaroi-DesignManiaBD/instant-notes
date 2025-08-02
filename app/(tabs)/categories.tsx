@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
   Appbar,
@@ -9,8 +9,10 @@ import {
   Text,
   Title,
   useTheme,
+  ActivityIndicator,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDatabaseContext } from "../../contexts/DatabaseContext";
 
 interface Category {
   id: string;
@@ -23,32 +25,39 @@ interface Category {
 
 export default function CategoriesScreen() {
   const theme = useTheme();
-  const [categories] = useState<Category[]>([
-    {
-      id: "1",
-      name: "Work",
-      color: "#007AFF",
-      icon: "briefcase",
-      noteCount: 5,
-      createdAt: new Date(),
-    },
-    {
-      id: "2",
-      name: "Personal",
-      color: "#34C759",
-      icon: "person",
-      noteCount: 3,
-      createdAt: new Date(),
-    },
-    {
-      id: "3",
-      name: "Ideas",
-      color: "#FF9500",
-      icon: "bulb",
-      noteCount: 8,
-      createdAt: new Date(),
-    },
-  ]);
+  const { db } = useDatabaseContext();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    if (!db) return;
+    setLoading(true);
+    try {
+      const result = await db.getAllAsync('SELECT * FROM categories ORDER BY name');
+      const categoriesWithCount = await Promise.all(
+        result.map(async (cat: any) => {
+          const countResult = await db.getFirstAsync(
+            'SELECT COUNT(*) as count FROM notes WHERE category LIKE ? AND isArchived = 0',
+            [`%"name":"${cat.name}"%`]
+          );
+          return {
+            ...cat,
+            noteCount: countResult?.count || 0,
+            createdAt: new Date(cat.createdAt),
+          };
+        })
+      );
+      setCategories(categoriesWithCount);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderCategoryCard = (category: Category) => {
     return (
@@ -114,7 +123,20 @@ export default function CategoriesScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>All Categories</Text>
-          {categories.map(renderCategoryCard)}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" />
+              <Text style={styles.loadingText}>Loading categories...</Text>
+            </View>
+          ) : categories.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="folder-outline" size={64} color={theme.colors.onSurfaceVariant} />
+              <Text style={styles.emptyText}>No categories yet</Text>
+              <Text style={styles.emptySubtext}>Create your first category to organize your notes</Text>
+            </View>
+          ) : (
+            categories.map(renderCategoryCard)
+          )}
         </View>
 
         <View style={styles.section}>
@@ -249,5 +271,35 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 64,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 64,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    opacity: 0.7,
+    textAlign: "center",
+    paddingHorizontal: 32,
   },
 });

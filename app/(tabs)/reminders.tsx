@@ -92,6 +92,33 @@ export default function RemindersScreen() {
     return { text: "Upcoming", color: theme.colors.onSurfaceVariant };
   };
 
+  const getColorWithOpacity = (color: string, opacity: number = 0.2) => {
+    // Convert hex color to rgba with opacity
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+    // If it's already rgba, extract rgb values and apply new opacity
+    if (color.startsWith('rgba')) {
+      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${opacity})`;
+      }
+    }
+    // If it's rgb, convert to rgba
+    if (color.startsWith('rgb')) {
+      const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (match) {
+        return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${opacity})`;
+      }
+    }
+    // For theme colors or other formats, use a safe fallback
+    return `rgba(128, 128, 128, ${opacity})`;
+  };
+
   const renderReminderCard = (reminder: Reminder) => {
     const timeStatus = getTimeStatus(reminder.dueDate, reminder.isCompleted);
     const isOverdue = !reminder.isCompleted && new Date() > reminder.dueDate;
@@ -147,7 +174,7 @@ export default function RemindersScreen() {
                 compact
                 style={[
                   styles.statusChip,
-                  { backgroundColor: `${timeStatus.color}20` },
+                  { backgroundColor: getColorWithOpacity(timeStatus.color) },
                 ]}
                 textStyle={{ color: timeStatus.color }}
               >

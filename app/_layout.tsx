@@ -6,6 +6,7 @@ import { Stack } from 'expo-router';
 import 'react-native-reanimated';
 
 import { ThemeProvider, useColorScheme } from '../contexts/ThemeContext';
+import { DatabaseProvider } from '../contexts/DatabaseContext';
 
 const lightTheme = {
   ...MD3LightTheme,
@@ -54,7 +55,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <AppContent />
+      <DatabaseProvider>
+        <AppContent />
+      </DatabaseProvider>
     </ThemeProvider>
   );
 }

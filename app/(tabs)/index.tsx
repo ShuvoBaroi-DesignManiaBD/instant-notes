@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import React, { useState } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, ScrollView, StyleSheet, RefreshControl, Alert } from "react-native";
 import {
   Appbar,
   FAB,
@@ -11,23 +11,14 @@ import {
   Searchbar,
   useTheme,
   Text,
+  ActivityIndicator,
+  IconButton,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  priority: 'low' | 'medium' | 'high';
-  deadline?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  isArchived: boolean;
-  isFavorite: boolean;
-}
+import { useDatabaseContext } from '../../contexts/DatabaseContext';
+import { Note } from '../../services/database';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -35,48 +26,49 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const { notes, isLoading, refreshNotes, deleteNote } = useDatabaseContext();
 
-  // Mock data - will be replaced with actual data from storage
-  const [notes] = useState<Note[]>([
-    {
-      id: "1",
-      title: "Welcome to Instant Notes",
-      content:
-        "This is your first note. You can edit, organize, and set reminders for your notes.",
-      tags: ["welcome", "tutorial"],
-      priority: "medium",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isArchived: false,
-      isFavorite: true,
-    },
-    {
-      id: "2",
-      title: "Meeting Notes",
-      content: "Discuss project timeline and deliverables...",
-      tags: ["work", "meeting"],
-      priority: "high",
-      deadline: new Date(Date.now() + 86400000), // Tomorrow
-      createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-      updatedAt: new Date(Date.now() - 3600000),
-      isArchived: false,
-      isFavorite: false,
-    },
-  ]);
+  // Notes are automatically loaded by DatabaseContext
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    // Simulate refresh
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await refreshNotes();
+    setRefreshing(false);
+  }, [refreshNotes]);
+
+  const handleDeleteNote = async (noteId: string) => {
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteNote(parseInt(noteId));
+            } catch (error) {
+              console.error('Error deleting note:', error);
+              Alert.alert('Error', 'Failed to delete note');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const filteredNotes = notes.filter(
-    (note) =>
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    (note) => {
+      const tags = note.tags ? note.tags.split(',').filter(tag => tag.trim()) : [];
+      return (
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tags.some((tag) =>
+          tag.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
   );
 
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
@@ -93,8 +85,9 @@ export default function HomeScreen() {
   };
 
   const renderNoteCard = (note: Note) => {
-    const isOverdue = note.deadline && new Date() > note.deadline;
+    const isOverdue = note.deadline && new Date() > new Date(note.deadline);
     const priorityColors = getPriorityColor(note.priority);
+    const tags = note.tags ? note.tags.split(',').filter(tag => tag.trim()) : [];
 
     return (
       <Card
@@ -107,9 +100,14 @@ export default function HomeScreen() {
             <Title style={styles.noteTitle} numberOfLines={1}>
               {note.title}
             </Title>
-            {note.isFavorite && (
-              <Ionicons name="heart" size={20} color={theme.colors.error} />
-            )}
+            <View style={styles.noteActions}>
+              <IconButton
+                icon="delete"
+                size={20}
+                onPress={() => handleDeleteNote(note.id.toString())}
+                style={styles.deleteButton}
+              />
+            </View>
           </View>
 
           <Paragraph numberOfLines={2} style={styles.noteContent}>
@@ -117,15 +115,15 @@ export default function HomeScreen() {
           </Paragraph>
 
           {/* Tags Section */}
-          {note.tags.length > 0 && (
+          {tags.length > 0 && (
             <View style={styles.tagsRow}>
-              {note.tags.slice(0, 3).map((tag) => (
-                <Chip key={tag} compact style={styles.tagChip}>
+              {tags.slice(0, 3).map((tag, index) => (
+                <Chip key={`${note.id}-${index}`} compact style={styles.tagChip}>
                   {tag}
                 </Chip>
               ))}
-              {note.tags.length > 3 && (
-                <Text style={styles.moreTagsText}>+{note.tags.length - 3}</Text>
+              {tags.length > 3 && (
+                <Text style={styles.moreTagsText}>+{tags.length - 3}</Text>
               )}
             </View>
           )}
@@ -172,7 +170,7 @@ export default function HomeScreen() {
                     : theme.colors.onPrimaryContainer,
                 }}
               >
-                {note.deadline.toLocaleDateString()}
+                {new Date(note.deadline).toLocaleDateString()}
               </Chip>
             )}
           </View>
@@ -206,32 +204,39 @@ export default function HomeScreen() {
         />
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {filteredNotes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="document-text-outline"
-              size={64}
-              color={theme.colors.onSurfaceVariant}
-            />
-            <Text style={styles.emptyStateText}>
-              {searchQuery ? "No notes found" : "No notes yet"}
-            </Text>
-            <Text style={styles.emptyStateSubtext}>
-              {searchQuery
-                ? "Try adjusting your search terms"
-                : "Tap the + button to create your first note"}
-            </Text>
-          </View>
-        ) : (
-          filteredNotes.map(renderNoteCard)
-        )}
-      </ScrollView>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Loading notes...</Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {filteredNotes.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="document-text-outline"
+                size={64}
+                color={theme.colors.onSurfaceVariant}
+              />
+              <Text style={styles.emptyStateText}>
+                {searchQuery ? "No notes found" : "No notes yet"}
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                {searchQuery
+                  ? "Try adjusting your search terms"
+                  : "Tap the + button to create your first note"}
+              </Text>
+            </View>
+          ) : (
+            filteredNotes.map(renderNoteCard)
+          )}
+        </ScrollView>
+      )}
 
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
@@ -266,6 +271,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
+  },
+  noteActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  deleteButton: {
+    margin: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 64,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    opacity: 0.7,
   },
   noteTitle: {
     flex: 1,

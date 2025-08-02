@@ -6,7 +6,9 @@ import React, {
   ReactNode,
 } from "react";
 import * as SQLite from 'expo-sqlite';
-import { databaseService, Note, Category } from "../services/database";
+import { databaseService } from "../services/database";
+import { notificationService } from '../services/notifications';
+import { Note, Category, Reminder } from '../types';
 
 interface DatabaseContextType {
   notes: Note[];
@@ -27,6 +29,8 @@ interface DatabaseContextType {
     category: Omit<Category, "id" | "created_at">
   ) => Promise<number>;
   deleteCategory: (id: number) => Promise<void>;
+  getUpcomingReminders: () => Promise<Reminder[]>;
+  markReminderCompleted: (reminderId: string) => Promise<void>;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(
@@ -183,6 +187,52 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
     }
   };
 
+  const getUpcomingReminders = async () => {
+    try {
+      // Filter notes with reminders
+      const notesWithReminders = notes.filter(note => note.reminder);
+      
+      // Convert notes with reminders to Reminder objects
+      const reminders: Reminder[] = notesWithReminders.map(note => ({
+        id: note.id.toString(),
+        noteId: note.id.toString(),
+        title: note.title,
+        description: note.content.substring(0, 100), // First 100 chars of content as description
+        dueDate: new Date(note.reminder),
+        isCompleted: false, // Default to not completed
+        priority: note.priority || 'medium',
+        notificationEnabled: note.reminderEnabled !== false, // Default to true unless explicitly set to false
+      }));
+      
+      return reminders;
+    } catch (error) {
+      console.error('Error getting upcoming reminders:', error);
+      return [];
+    }
+  };
+
+  const markReminderCompleted = async (reminderId: string) => {
+    try {
+      // Find the note that corresponds to this reminder
+      const noteId = parseInt(reminderId);
+      const note = notes.find(note => note.id === noteId);
+      
+      if (note) {
+        // Mark the reminder as completed in the database
+        await databaseService.markReminderCompleted(noteId);
+        
+        // Cancel any scheduled notification for this reminder
+        await notificationService.cancelNotification(reminderId);
+        
+        // Refresh notes to reflect the changes
+        await refreshNotes();
+      }
+    } catch (error) {
+      console.error("Failed to mark reminder as completed:", error);
+      throw error;
+    }
+  };
+
   const value: DatabaseContextType = {
     notes,
     categories,
@@ -195,6 +245,8 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
     searchNotes,
     createCategory,
     deleteCategory,
+    getUpcomingReminders,
+    markReminderCompleted,
   };
 
   return (

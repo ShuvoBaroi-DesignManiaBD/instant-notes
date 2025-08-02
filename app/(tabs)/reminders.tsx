@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
   Appbar,
@@ -12,73 +12,172 @@ import {
   Text,
   Title,
   useTheme,
+  ActivityIndicator,
 } from "react-native-paper";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDatabaseContext } from "../../contexts/DatabaseContext";
+import { databaseService } from "../../services/database";
+import { notificationService } from "../../services/notifications";
+import { Reminder } from "../../types";
+import { useRouter } from "expo-router";
 
-interface Reminder {
-  id: string;
-  noteId: string;
-  title: string;
-  description?: string;
-  dueDate: Date;
-  isCompleted: boolean;
-  priority: "low" | "medium" | "high";
-  notificationEnabled: boolean;
-}
+// Using the Reminder interface from types/index.ts
 
 export default function RemindersScreen() {
   const theme = useTheme();
-  const [reminders, setReminders] = useState<Reminder[]>([
-    {
-      id: "1",
-      noteId: "2",
-      title: "Meeting Notes Review",
-      description: "Review and finalize meeting notes",
-      dueDate: new Date(Date.now() + 3600000), // 1 hour from now
-      isCompleted: false,
-      priority: "high",
-      notificationEnabled: true,
-    },
-    {
-      id: "2",
-      noteId: "1",
-      title: "Welcome Note Follow-up",
-      description: "Complete the tutorial tasks",
-      dueDate: new Date(Date.now() + 86400000), // Tomorrow
-      isCompleted: false,
-      priority: "medium",
-      notificationEnabled: true,
-    },
-    {
-      id: "3",
-      noteId: "3",
-      title: "Project Planning",
-      description: "Create project timeline",
-      dueDate: new Date(Date.now() - 3600000), // 1 hour ago (overdue)
-      isCompleted: true,
-      priority: "low",
-      notificationEnabled: false,
-    },
-  ]);
+  const router = useRouter();
+  const { notes, refreshNotes } = useDatabaseContext();
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleReminder = (id: string) => {
-    setReminders((prev) =>
-      prev.map((reminder) =>
-        reminder.id === id
-          ? { ...reminder, isCompleted: !reminder.isCompleted }
-          : reminder
-      )
-    );
+  useEffect(() => {
+    loadReminders();
+  }, [notes]);
+  
+  // Schedule notifications for all upcoming reminders
+  useEffect(() => {
+    if (reminders.length > 0) {
+      scheduleNotificationsForReminders();
+    }
+  }, [reminders]);
+  
+  // Refresh reminders when the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshNotes();
+    }, [])
+  );
+
+  const loadReminders = async () => {
+    setLoading(true);
+    try {
+      // Get notes with reminders
+      const notesWithReminders = notes.filter(note => note.reminder);
+      
+      // Convert notes with reminders to Reminder objects
+      const remindersList: Reminder[] = notesWithReminders.map(note => ({
+        id: note.id.toString(),
+        noteId: note.id.toString(),
+        title: note.title,
+        description: note.content.substring(0, 100), // First 100 chars of content as description
+        dueDate: note.reminder ? new Date(note.reminder) : new Date(),
+        isCompleted: false, // Default to not completed
+        priority: note.priority,
+        notificationEnabled: true, // Default to enabled
+      }));
+      
+      setReminders(remindersList);
+    } catch (error) {
+      console.error('Error loading reminders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Schedule notifications for all upcoming reminders
+  const scheduleNotificationsForReminders = async () => {
+    try {
+      // Only schedule for non-completed reminders with future due dates
+      const upcomingReminders = reminders.filter(
+        r => !r.isCompleted && r.notificationEnabled && r.dueDate > new Date()
+      );
+      
+      console.log(`Scheduling notifications for ${upcomingReminders.length} reminders`);
+      
+      // Schedule each reminder
+      for (const reminder of upcomingReminders) {
+        await notificationService.scheduleNotification(reminder);
+      }
+    } catch (error) {
+      console.error('Error scheduling notifications:', error);
+    }
   };
 
-  const toggleNotification = (id: string) => {
-    setReminders((prev) =>
-      prev.map((reminder) =>
-        reminder.id === id
-          ? { ...reminder, notificationEnabled: !reminder.notificationEnabled }
-          : reminder
-      )
-    );
+  const toggleReminder = async (id: string) => {
+    try {
+      // Update the reminder completion status in the local state
+      const reminder = reminders.find(r => r.id === id);
+      if (!reminder) return;
+      
+      const isCurrentlyCompleted = reminder.isCompleted;
+      
+      // Update local state first for immediate UI feedback
+      setReminders((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, isCompleted: !isCurrentlyCompleted }
+            : r
+        )
+      );
+      
+      if (!isCurrentlyCompleted) {
+        // If marking as completed, update the database
+        await databaseService.markReminderCompleted(parseInt(id));
+        // Refresh notes to update the UI
+        await refreshNotes();
+      } else {
+        // If marking as not completed, we would need to re-add the reminder
+        // This would require additional implementation in the database service
+        // For now, we'll just refresh the notes to revert to the actual state
+        await refreshNotes();
+      }
+    } catch (error) {
+      console.error('Error toggling reminder:', error);
+      // Revert the UI change if there was an error
+      loadReminders();
+    }
+  };
+
+  const toggleNotification = async (id: string) => {
+    try {
+      // Find the reminder before updating state
+      const reminder = reminders.find(r => r.id === id);
+      if (!reminder) return;
+      
+      const newNotificationEnabled = !reminder.notificationEnabled;
+      
+      // Update the notification status in the local state for immediate feedback
+      setReminders((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, notificationEnabled: newNotificationEnabled }
+            : r
+        )
+      );
+      
+      // Find the note that corresponds to this reminder
+      const noteId = parseInt(id);
+      const note = notes.find(n => n.id === noteId);
+      
+      if (note) {
+        // Handle notification scheduling/cancellation
+        if (newNotificationEnabled) {
+          // Schedule notification if enabled
+          const updatedReminder = {
+            ...reminder,
+            notificationEnabled: true
+          };
+          await notificationService.scheduleNotification(updatedReminder);
+          console.log(`Scheduled notification for reminder ${id}`);
+        } else {
+          // Cancel notification if disabled
+          await notificationService.cancelNotification(id);
+          console.log(`Cancelled notification for reminder ${id}`);
+        }
+        
+        // In a full implementation, we would update a notification setting in the database
+        // For now, we'll just log this action
+        console.log(`Toggled notification for reminder ${id} to ${newNotificationEnabled}`);
+        
+        // Refresh notes to ensure UI is in sync with actual data
+        await refreshNotes();
+      }
+    } catch (error) {
+      console.error('Error toggling notification:', error);
+      // Revert the UI change if there was an error
+      loadReminders();
+    }
   };
 
   const getTimeStatus = (dueDate: Date, isCompleted: boolean) => {
@@ -134,7 +233,8 @@ export default function RemindersScreen() {
           },
         ]}
         onPress={() => {
-          // Navigate to note
+          // Navigate to the note
+          router.push(`/note-editor?noteId=${reminder.noteId}`);
         }}
       >
         <Card.Content>
@@ -212,7 +312,7 @@ export default function RemindersScreen() {
                 icon="dots-vertical"
                 size={20}
                 onPress={() => {
-                  // Show reminder options
+                  // Show reminder options in a future implementation
                 }}
               />
             </View>
@@ -260,7 +360,12 @@ export default function RemindersScreen() {
           </View>
         )}
 
-        {reminders.length === 0 && (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.emptyStateText}>Loading reminders...</Text>
+          </View>
+        ) : reminders.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
               name="alarm-outline"
@@ -269,17 +374,18 @@ export default function RemindersScreen() {
             />
             <Text style={styles.emptyStateText}>No reminders yet</Text>
             <Text style={styles.emptyStateSubtext}>
-              Set deadlines for your notes to see them here
+              Add reminders to your notes to see them here
             </Text>
           </View>
-        )}
+        ) : null}
       </ScrollView>
 
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         onPress={() => {
-          // Create new reminder
+          // Navigate to create a new note with reminder enabled by default
+          router.push('/note-editor?reminderEnabled=true');
         }}
       />
     </SafeAreaView>

@@ -1,37 +1,24 @@
-import { Image } from 'expo-image';
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   Appbar,
-  FAB,
   Card,
-  Title,
-  Paragraph,
   Chip,
+  FAB,
+  Paragraph,
   Searchbar,
-  useTheme,
   Text,
+  Title,
+  useTheme,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from '@expo/vector-icons';
+import { Note } from "../types";
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  priority: 'low' | 'medium' | 'high';
-  deadline?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  isArchived: boolean;
-  isFavorite: boolean;
-}
-
-export default function HomeScreen() {
+const HomeScreen: React.FC = () => {
   const theme = useTheme();
-  const router = useRouter();
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -79,28 +66,19 @@ export default function HomeScreen() {
       )
   );
 
-  const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
-    switch (priority) {
-      case 'high':
-        return { bg: '#FFEBEE', text: '#C62828' }; // Red
-      case 'medium':
-        return { bg: '#FFF3E0', text: '#F57C00' }; // Orange
-      case 'low':
-        return { bg: '#E8F5E8', text: '#2E7D32' }; // Green
-      default:
-        return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
-    }
-  };
-
   const renderNoteCard = (note: Note) => {
     const isOverdue = note.deadline && new Date() > note.deadline;
-    const priorityColors = getPriorityColor(note.priority);
 
     return (
       <Card
         key={note.id}
         style={[styles.noteCard, { backgroundColor: theme.colors.surface }]}
-        onPress={() => router.push(`note-editor?noteId=${note.id}`)}
+        onPress={() =>
+          navigation.navigate(
+            "NoteEditor" as never,
+            { noteId: note.id } as never
+          )
+        }
       >
         <Card.Content>
           <View style={styles.noteHeader}>
@@ -116,65 +94,50 @@ export default function HomeScreen() {
             {note.content}
           </Paragraph>
 
-          {/* Tags Section */}
-          {note.tags.length > 0 && (
-            <View style={styles.tagsRow}>
-              {note.tags.slice(0, 3).map((tag) => (
-                <Chip key={tag} compact style={styles.tagChip}>
+          <View style={styles.noteFooter}>
+            <View style={styles.tagsContainer}>
+              {note.tags.slice(0, 2).map((tag) => (
+                <Chip key={tag} compact style={styles.tag}>
                   {tag}
                 </Chip>
               ))}
-              {note.tags.length > 3 && (
-                <Text style={styles.moreTagsText}>+{note.tags.length - 3}</Text>
+              {note.tags.length > 2 && (
+                <Text style={styles.moreTagsText}>+{note.tags.length - 2}</Text>
               )}
             </View>
-          )}
 
-          {/* Metadata Row */}
-          <View style={styles.metadataRow}>
-            {/* Priority */}
-            <Chip
-              compact
-              style={[
-                styles.priorityChip,
-                {
-                  backgroundColor: priorityColors.bg,
-                },
-              ]}
-              textStyle={{ color: priorityColors.text, fontWeight: '600' }}
-              icon={
-                note.priority === "high"
-                  ? "flag"
-                  : note.priority === "medium"
-                  ? "flag-outline"
-                  : "flag-variant"
-              }
-            >
-              {note.priority.toUpperCase()}
-            </Chip>
-
-            {/* Deadline */}
-            {note.deadline && (
+            <View style={styles.metaInfo}>
+              {note.deadline && (
+                <Chip
+                  icon="alarm"
+                  compact
+                  style={[
+                    styles.deadlineChip,
+                    isOverdue && {
+                      backgroundColor: theme.colors.errorContainer,
+                    },
+                  ]}
+                >
+                  {note.deadline.toLocaleDateString()}
+                </Chip>
+              )}
               <Chip
-                icon="calendar-clock"
                 compact
                 style={[
-                  styles.deadlineChip,
+                  styles.priorityChip,
                   {
-                    backgroundColor: isOverdue 
-                      ? theme.colors.errorContainer 
-                      : theme.colors.primaryContainer,
+                    backgroundColor:
+                      note.priority === "high"
+                        ? theme.colors.errorContainer
+                        : note.priority === "medium"
+                        ? theme.colors.tertiaryContainer
+                        : theme.colors.surfaceVariant,
                   },
                 ]}
-                textStyle={{
-                  color: isOverdue 
-                    ? theme.colors.onErrorContainer 
-                    : theme.colors.onPrimaryContainer,
-                }}
               >
-                {note.deadline.toLocaleDateString()}
+                {note.priority}
               </Chip>
-            )}
+            </View>
           </View>
         </Card.Content>
       </Card>
@@ -193,7 +156,7 @@ export default function HomeScreen() {
         />
         <Appbar.Action
           icon="magnify"
-          onPress={() => router.push("search")}
+          onPress={() => navigation.navigate("Search" as never)}
         />
       </Appbar.Header>
 
@@ -236,11 +199,11 @@ export default function HomeScreen() {
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
-        onPress={() => router.push("note-editor")}
+        onPress={() => navigation.navigate("NoteEditor" as never)}
       />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -276,34 +239,35 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 20,
   },
-  tagsRow: {
+  noteFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  tagsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    flexWrap: "wrap",
+    flex: 1,
   },
-  tagChip: {
-    marginRight: 6,
-    marginBottom: 4,
+  tag: {
+    marginRight: 4,
+    height: 24,
   },
   moreTagsText: {
     fontSize: 12,
     opacity: 0.7,
     marginLeft: 4,
   },
-  metadataRow: {
+  metaInfo: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 8,
-  },
-  priorityChip: {
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
   deadlineChip: {
-    borderWidth: 1,
-    borderColor: 'transparent',
+    marginRight: 4,
+    height: 24,
+  },
+  priorityChip: {
+    height: 24,
   },
   emptyState: {
     flex: 1,
@@ -321,7 +285,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     textAlign: "center",
-    paddingHorizontal: 32,
   },
   fab: {
     position: "absolute",
@@ -330,3 +293,5 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+
+export default HomeScreen;

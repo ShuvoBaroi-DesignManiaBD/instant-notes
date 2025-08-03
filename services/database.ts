@@ -152,10 +152,20 @@ class DatabaseService {
         note_id INTEGER,
         reminder_time DATETIME NOT NULL,
         is_completed BOOLEAN DEFAULT FALSE,
+        notification_enabled BOOLEAN DEFAULT TRUE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (note_id) REFERENCES notes (id) ON DELETE CASCADE
       );
     `);
+    
+    // Add notification_enabled column if it doesn't exist (for existing databases)
+    try {
+      await this.db.execAsync(`
+        ALTER TABLE reminders ADD COLUMN notification_enabled BOOLEAN DEFAULT TRUE;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
   }
 
   private async seedDefaultCategories() {
@@ -416,7 +426,65 @@ class DatabaseService {
     return reminders as Reminder[];
   }
 
+  async getAllReminders(): Promise<any[]> {
+    if (this.isWeb) {
+      // For web, create reminders from notes with reminder dates
+      const notesWithReminders = this.webNotes.filter(note => note.reminder);
+      return notesWithReminders.map(note => ({
+        id: note.id.toString(),
+        noteId: note.id.toString(),
+        title: note.title,
+        description: note.content.substring(0, 100),
+        dueDate: new Date(note.reminder!),
+        isCompleted: false, // Default for web
+        priority: note.priority,
+        notificationEnabled: true // Default for web
+      }));
+    }
+
+    if (!this.db) throw new Error('Database not initialized');
+
+    const reminders = await this.db.getAllAsync(
+      `SELECT r.*, n.title, n.content, n.priority
+       FROM reminders r
+       JOIN notes n ON r.note_id = n.id
+       ORDER BY r.reminder_time ASC`
+    );
+
+    return reminders.map((r: any) => ({
+      id: r.id.toString(),
+      noteId: r.note_id.toString(),
+      title: r.title,
+      description: r.content.substring(0, 100),
+      dueDate: new Date(r.reminder_time),
+      isCompleted: r.is_completed,
+      priority: r.priority,
+      notificationEnabled: r.notification_enabled !== undefined ? r.notification_enabled : true
+    }));
+  }
+
+  async createReminder(noteId: number, reminderTime: string): Promise<number> {
+    if (this.isWeb) {
+      // For web, reminders are managed through notes
+      return noteId;
+    }
+
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.runAsync(
+      'INSERT INTO reminders (note_id, reminder_time) VALUES (?, ?)',
+      [noteId, reminderTime]
+    );
+
+    return result.lastInsertRowId!;
+  }
+
   async markReminderCompleted(id: number): Promise<void> {
+    if (this.isWeb) {
+      // For web, we can't persist reminder completion
+      return;
+    }
+
     if (!this.db) throw new Error('Database not initialized');
 
     await this.db.runAsync(
@@ -424,6 +492,34 @@ class DatabaseService {
       [id]
     );
   }
+
+  async toggleReminderCompletion(id: number): Promise<void> {
+     if (this.isWeb) {
+       // For web, we can't persist reminder completion
+       return;
+     }
+
+     if (!this.db) throw new Error('Database not initialized');
+
+     await this.db.runAsync(
+       'UPDATE reminders SET is_completed = NOT is_completed WHERE id = ?',
+       [id]
+     );
+   }
+
+   async toggleReminderNotification(id: number): Promise<void> {
+     if (this.isWeb) {
+       // For web, we can't persist notification settings
+       return;
+     }
+
+     if (!this.db) throw new Error('Database not initialized');
+
+     await this.db.runAsync(
+       'UPDATE reminders SET notification_enabled = NOT notification_enabled WHERE id = ?',
+       [id]
+     );
+   }
 }
 
 export const databaseService = new DatabaseService();

@@ -52,26 +52,37 @@ export default function RemindersScreen() {
   const loadReminders = async () => {
     setLoading(true);
     try {
-      // Get notes with reminders
-      const notesWithReminders = notes.filter(note => note.reminder);
+      // First, ensure reminders exist in database for notes with reminder dates
+      await syncRemindersWithNotes();
       
-      // Convert notes with reminders to Reminder objects
-      const remindersList: Reminder[] = notesWithReminders.map(note => ({
-        id: note.id.toString(),
-        noteId: note.id.toString(),
-        title: note.title,
-        description: note.content.substring(0, 100), // First 100 chars of content as description
-        dueDate: note.reminder ? new Date(note.reminder) : new Date(),
-        isCompleted: false, // Default to not completed
-        priority: note.priority,
-        notificationEnabled: true, // Default to enabled
-      }));
-      
+      // Get all reminders from database
+      const remindersList = await databaseService.getAllReminders();
       setReminders(remindersList);
     } catch (error) {
       console.error('Error loading reminders:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Sync reminders table with notes that have reminder dates
+  const syncRemindersWithNotes = async () => {
+    try {
+      const notesWithReminders = notes.filter(note => note.reminder);
+      
+      for (const note of notesWithReminders) {
+        // Check if reminder already exists for this note
+        const existingReminders = await databaseService.getAllReminders();
+        const reminderExists = existingReminders.some(r => r.noteId === note.id.toString());
+        
+        if (!reminderExists && note.reminder) {
+          // Ensure reminder is converted to string format
+          const reminderTime = typeof note.reminder === 'string' ? note.reminder : new Date(note.reminder).toISOString();
+          await databaseService.createReminder(note.id, reminderTime);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing reminders:', error);
     }
   };
   
@@ -111,17 +122,11 @@ export default function RemindersScreen() {
         )
       );
       
-      if (!isCurrentlyCompleted) {
-        // If marking as completed, update the database
-        await databaseService.markReminderCompleted(parseInt(id));
-        // Refresh notes to update the UI
-        await refreshNotes();
-      } else {
-        // If marking as not completed, we would need to re-add the reminder
-        // This would require additional implementation in the database service
-        // For now, we'll just refresh the notes to revert to the actual state
-        await refreshNotes();
-      }
+      // Toggle completion status in database
+      await databaseService.toggleReminderCompletion(parseInt(id));
+      
+      // Refresh notes to update the UI
+      await refreshNotes();
     } catch (error) {
       console.error('Error toggling reminder:', error);
       // Revert the UI change if there was an error
@@ -146,33 +151,28 @@ export default function RemindersScreen() {
         )
       );
       
-      // Find the note that corresponds to this reminder
-      const noteId = parseInt(id);
-      const note = notes.find(n => n.id === noteId);
+      // Update notification setting in database
+      await databaseService.toggleReminderNotification(parseInt(id));
       
-      if (note) {
-        // Handle notification scheduling/cancellation
-        if (newNotificationEnabled) {
-          // Schedule notification if enabled
-          const updatedReminder = {
-            ...reminder,
-            notificationEnabled: true
-          };
-          await notificationService.scheduleNotification(updatedReminder);
-          console.log(`Scheduled notification for reminder ${id}`);
-        } else {
-          // Cancel notification if disabled
-          await notificationService.cancelNotification(id);
-          console.log(`Cancelled notification for reminder ${id}`);
-        }
-        
-        // In a full implementation, we would update a notification setting in the database
-        // For now, we'll just log this action
-        console.log(`Toggled notification for reminder ${id} to ${newNotificationEnabled}`);
-        
-        // Refresh notes to ensure UI is in sync with actual data
-        await refreshNotes();
+      // Handle notification scheduling/cancellation
+      if (newNotificationEnabled) {
+        // Schedule notification if enabled
+        const updatedReminder = {
+          ...reminder,
+          notificationEnabled: true
+        };
+        await notificationService.scheduleNotification(updatedReminder);
+        console.log(`Scheduled notification for reminder ${id}`);
+      } else {
+        // Cancel notification if disabled
+        await notificationService.cancelNotification(id);
+        console.log(`Cancelled notification for reminder ${id}`);
       }
+      
+      console.log(`Toggled notification for reminder ${id} to ${newNotificationEnabled}`);
+      
+      // Refresh reminders to ensure UI is in sync with database
+      await loadReminders();
     } catch (error) {
       console.error('Error toggling notification:', error);
       // Revert the UI change if there was an error

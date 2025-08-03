@@ -294,8 +294,8 @@ export default function NoteEditorScreen() {
         <Appbar.Content
           title={
             isEditing
-              ? noteId === "new"
-                ? "New Note"
+              ? !noteId
+                ? "Add Note"
                 : "Edit Note"
               : note.title || "Untitled"
           }

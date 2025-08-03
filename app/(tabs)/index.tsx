@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, RefreshControl, Alert, FlatList } from "react-native";
 import {
   Appbar,
   FAB,
@@ -75,11 +75,11 @@ export default function HomeScreen() {
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return { bg: '#FFEBEE', text: '#C62828' }; // Red
+        return { bg: theme.colors.errorContainer, text: theme.colors.error };
       case 'medium':
-        return { bg: '#FFF3E0', text: '#F57C00' }; // Orange
+        return { bg: theme.colors.secondaryContainer, text: theme.colors.secondary };
       case 'low':
-        return { bg: '#E8F5E8', text: '#2E7D32' }; // Green
+        return { bg: theme.colors.tertiaryContainer, text: theme.colors.tertiary };
       default:
         return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
     }
@@ -93,58 +93,116 @@ export default function HomeScreen() {
     return (
       <Card
         key={note.id}
-        style={[styles.noteCard, { backgroundColor: theme.colors.surface }]}
+        style={[
+          styles.noteCard,
+          viewMode === "grid" ? styles.gridCard : styles.listCard,
+          {
+            backgroundColor: theme.dark 
+              ? theme.colors.elevation.level2 
+              : '#ffffff',
+            borderColor: theme.dark 
+              ? theme.colors.outlineVariant 
+              : theme.colors.outline,
+            borderWidth: 1,
+            borderRadius: 12,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: theme.dark ? 0.15 : 0.1,
+            shadowRadius: 8,
+            elevation: 4,
+          }
+        ]}
         onPress={() => router.push(`note-editor?noteId=${note.id}`)}
       >
-        <Card.Content style={styles.cardContent}>
+        <Card.Content style={viewMode === "grid" ? styles.gridCardContent : styles.cardContent}>
           {/* Card Header with Title and Delete Button */}
           <View style={styles.noteHeader}>
-            <Title style={styles.noteTitle} numberOfLines={1}>
-              {note.title}
+            <Title 
+              style={[
+                viewMode === "grid" ? styles.gridNoteTitle : styles.noteTitle, 
+                { color: theme.colors.onSurface },
+                note.content.length === 0 && { fontStyle: 'italic' }
+              ]} 
+              numberOfLines={viewMode === "grid" ? 1 : 2}
+            >
+              {note.title || 'Untitled Note'}
             </Title>
             <IconButton
               icon="delete"
               size={20}
+              iconColor={theme.colors.onSurfaceVariant}
               onPress={() => handleDeleteNote(note.id.toString())}
               style={styles.deleteButton}
             />
           </View>
 
           {/* Note Content Preview */}
-          <Paragraph numberOfLines={2} style={styles.noteContent}>
-            {note.content}
-          </Paragraph>
+          {note.content && (
+            <Paragraph 
+              numberOfLines={viewMode === "grid" ? 1 : 2} 
+              style={[
+                viewMode === "grid" ? styles.gridNoteContent : styles.noteContent,
+                { color: theme.colors.onSurfaceVariant }
+              ]}
+            >
+              {note.content}
+            </Paragraph>
+          )}
 
           {/* Divider */}
-          <View style={styles.divider} />
+          <View style={[
+            viewMode === "grid" ? styles.gridDivider : styles.divider,
+            { backgroundColor: theme.colors.outlineVariant }
+          ]} />
 
           {/* Bottom Card Section */}
-          <View style={styles.cardFooter}>
+          <View style={viewMode === "grid" ? styles.gridCardFooter : styles.cardFooter}>
             {/* Left Column: Category and Tags */}
-            <View style={styles.leftColumn}>
+            <View style={viewMode === "grid" ? styles.gridLeftColumn : styles.leftColumn}>
               {/* Category Badge */}
               {note.category_id && (
-                <View style={styles.categoryContainer}>
-                  <Ionicons name="folder-outline" size={14} color="#7B1FA2" />
-                  <Text style={styles.categoryText}>Category</Text>
+                <View style={viewMode === "grid" ? styles.gridCategoryContainer : styles.categoryContainer}>
+                  <Ionicons 
+                    name="folder-outline" 
+                    size={14} 
+                    color={theme.colors.primary} 
+                  />
+                  <Text style={[
+                    styles.categoryText,
+                    { color: theme.colors.primary }
+                  ]}>
+                    Category
+                  </Text>
                 </View>
               )}
 
               {/* Tags Section */}
               {tags.length > 0 && (
-                <View style={styles.tagsContainer}>
-                  <Ionicons name="pricetag-outline" size={14} color="#1976D2" />
+                <View style={viewMode === "grid" ? styles.gridTagsContainer : styles.tagsContainer}>
+                  <Ionicons 
+                    name="pricetag-outline" 
+                    size={14} 
+                    color={theme.colors.secondary} 
+                  />
                   <View style={styles.tagsRow}>
-                    {tags.slice(0, 2).map((tag, index) => (
+                    {tags.slice(0, viewMode === "grid" ? 1 : 2).map((tag, index) => (
                       <Text 
                         key={`${note.id}-${index}`}
-                        style={styles.tagText}
+                        style={[
+                          styles.tagText,
+                          { color: theme.colors.secondary }
+                        ]}
                       >
-                        {tag}{index < Math.min(tags.length, 2) - 1 ? ', ' : ''}
+                        {tag}{index < Math.min(tags.length, viewMode === "grid" ? 1 : 2) - 1 ? ', ' : ''}
                       </Text>
                     ))}
-                    {tags.length > 2 && (
-                      <Text style={styles.moreTagsText}>+{tags.length - 2}</Text>
+                    {tags.length > (viewMode === "grid" ? 1 : 2) && (
+                      <Text style={[
+                        styles.moreTagsText,
+                        { color: theme.colors.onSurfaceVariant }
+                      ]}>
+                        +{tags.length - (viewMode === "grid" ? 1 : 2)}
+                      </Text>
                     )}
                   </View>
                 </View>
@@ -152,20 +210,27 @@ export default function HomeScreen() {
             </View>
 
             {/* Right Column: Priority and Deadline */}
-            <View style={styles.rightColumn}>
+            <View style={viewMode === "grid" ? styles.gridRightColumn : styles.rightColumn}>
               {/* Priority Badge */}
               <View 
                 style={[
-                  styles.priorityBadge, 
-                  {backgroundColor: priorityColors.bg}
+                  viewMode === "grid" ? styles.gridPriorityBadge : styles.priorityBadge, 
+                  {
+                    backgroundColor: priorityColors.bg,
+                    borderColor: priorityColors.text,
+                    borderWidth: 1,
+                  }
                 ]}
               >
                 <Ionicons 
                   name={note.priority === "high" ? "alert-circle" : note.priority === "medium" ? "alert" : "checkmark-circle"} 
-                  size={12} 
+                  size={viewMode === "grid" ? 10 : 12} 
                   color={priorityColors.text} 
                 />
-                <Text style={[styles.priorityText, {color: priorityColors.text}]}>
+                <Text style={[
+                  viewMode === "grid" ? styles.gridPriorityText : styles.priorityText, 
+                  {color: priorityColors.text}
+                ]}>
                   {note.priority.toUpperCase()}
                 </Text>
               </View>
@@ -174,22 +239,33 @@ export default function HomeScreen() {
               {note.deadline && (
                 <View 
                   style={[
-                    styles.deadlineBadge,
-                    {backgroundColor: isOverdue ? '#FFEBEE' : '#E8F5E8'}
+                    viewMode === "grid" ? styles.gridDeadlineBadge : styles.deadlineBadge,
+                    {
+                      backgroundColor: isOverdue 
+                        ? theme.colors.errorContainer 
+                        : theme.colors.secondaryContainer,
+                      borderColor: isOverdue 
+                        ? theme.colors.error 
+                        : theme.colors.secondary,
+                      borderWidth: 1,
+                    }
                   ]}
                 >
                   <Ionicons 
                     name="calendar-outline" 
-                    size={12} 
-                    color={isOverdue ? '#C62828' : '#2E7D32'} 
+                    size={viewMode === "grid" ? 10 : 12} 
+                    color={isOverdue ? theme.colors.error : theme.colors.secondary} 
                   />
                   <Text 
                     style={[
-                      styles.deadlineText,
-                      {color: isOverdue ? '#C62828' : '#2E7D32'}
+                      viewMode === "grid" ? styles.gridDeadlineText : styles.deadlineText,
+                      {color: isOverdue ? theme.colors.error : theme.colors.secondary}
                     ]}
                   >
-                    {new Date(note.deadline).toLocaleDateString()}
+                    {new Date(note.deadline).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
                   </Text>
                 </View>
               )}
@@ -231,32 +307,36 @@ export default function HomeScreen() {
           <Text style={styles.loadingText}>Loading notes...</Text>
         </View>
       ) : (
-        <ScrollView
-          style={styles.content}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {filteredNotes.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons
-                name="document-text-outline"
-                size={64}
-                color={theme.colors.onSurfaceVariant}
-              />
-              <Text style={styles.emptyStateText}>
-                {searchQuery ? "No notes found" : "No notes yet"}
-              </Text>
-              <Text style={styles.emptyStateSubtext}>
-                {searchQuery
-                  ? "Try adjusting your search terms"
-                  : "Tap the + button to create your first note"}
-              </Text>
-            </View>
-          ) : (
-            filteredNotes.map(renderNoteCard)
-          )}
-        </ScrollView>
+        filteredNotes.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="document-text-outline"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text style={styles.emptyStateText}>
+              {searchQuery ? "No notes found" : "No notes yet"}
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              {searchQuery
+                ? "Try adjusting your search terms"
+                : "Tap the + button to create your first note"}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredNotes}
+            renderItem={({ item }) => renderNoteCard(item)}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={viewMode === "grid" ? 2 : 1}
+            key={viewMode} // Force re-render when viewMode changes
+            contentContainerStyle={styles.content}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            columnWrapperStyle={viewMode === "grid" ? styles.gridRow : undefined}
+          />
+        )
       )}
 
       <FAB
@@ -280,26 +360,41 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 16,
   },
   noteCard: {
-    marginVertical: 8,
-    elevation: 3,
     borderRadius: 12,
-    overflow: 'hidden',
+  },
+  listCard: {
+    marginVertical: 8,
+    marginHorizontal: 0,
+  },
+  gridCard: {
+    flex: 1,
+    marginVertical: 4,
+    marginHorizontal: 4,
+    maxWidth: '48%',
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   cardContent: {
     padding: 16,
   },
+  gridCardContent: {
+    padding: 12,
+  },
   noteHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    marginBottom: 12,
   },
   deleteButton: {
-    margin: 0,
+    margin: -4,
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -310,65 +405,100 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    opacity: 0.7,
+    lineHeight: 24,
   },
   noteTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
+    lineHeight: 24,
+    marginRight: 12,
+  },
+  gridNoteTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 20,
+    marginRight: 8,
   },
   noteContent: {
-    marginBottom: 12,
+    marginBottom: 16,
     lineHeight: 20,
-    opacity: 0.8,
+  },
+  gridNoteContent: {
+    marginBottom: 12,
+    lineHeight: 18,
+    fontSize: 13,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
     marginVertical: 12,
+  },
+  gridDivider: {
+    height: 1,
+    marginVertical: 8,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  gridCardFooter: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
   leftColumn: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 8,
+  },
+  gridLeftColumn: {
+    marginBottom: 8,
   },
   rightColumn: {
     alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 8,
+  },
+  gridRightColumn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   categoryContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginBottom: 6,
+  },
+  gridCategoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   categoryText: {
-    color: '#7B1FA2',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 4,
   },
   tagsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    flexWrap: 'wrap',
+  },
+  gridTagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
   },
   tagsRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
+    marginLeft: 4,
   },
   tagText: {
-    color: '#1976D2',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
   },
   moreTagsText: {
-    fontSize: 12,
-    color: '#757575',
+    fontSize: 13,
+    fontWeight: '600',
     marginLeft: 4,
   },
   priorityBadge: {
@@ -376,24 +506,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  gridPriorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 0,
   },
   priorityText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
+    marginLeft: 4,
+  },
+  gridPriorityText: {
+    fontSize: 9,
+    fontWeight: '700',
+    marginLeft: 2,
   },
   deadlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    borderRadius: 8,
+  },
+  gridDeadlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   deadlineText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  gridDeadlineText: {
+    fontSize: 9,
+    fontWeight: '700',
+    marginLeft: 2,
   },
   emptyState: {
     flex: 1,
@@ -409,13 +565,12 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: {
     fontSize: 14,
-    opacity: 0.7,
     textAlign: "center",
     paddingHorizontal: 32,
   },
   fab: {
     position: "absolute",
-    margin: 16,
+    margin: 20,
     right: 0,
     bottom: 0,
   },

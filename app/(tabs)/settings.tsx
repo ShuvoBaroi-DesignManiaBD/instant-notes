@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Alert } from "react-native";
 import {
   Appbar,
   Button,
@@ -67,7 +67,7 @@ export default function SettingsScreen() {
         <Appbar.Action
           icon="information"
           onPress={() => {
-            // Show app info
+            Alert.alert('App Information', 'Instant Notes v1.0.0\n\nA modern note-taking app built with React Native and Expo.');
           }}
         />
       </Appbar.Header>
@@ -186,7 +186,7 @@ export default function SettingsScreen() {
             description="Export all notes to file"
             left={(props) => <List.Icon {...props} icon="export" />}
             onPress={() => {
-              // Export functionality
+              Alert.alert('Export Notes', 'Export functionality coming soon!');
             }}
           />
           <Divider />
@@ -195,7 +195,7 @@ export default function SettingsScreen() {
             description="Import notes from file"
             left={(props) => <List.Icon {...props} icon="import" />}
             onPress={() => {
-              // Import functionality
+              Alert.alert('Import Notes', 'Import functionality coming soon!');
             }}
           />
         </SettingCard>
@@ -206,7 +206,7 @@ export default function SettingsScreen() {
             description="View app storage details"
             left={(props) => <List.Icon {...props} icon="harddisk" />}
             onPress={() => {
-              // Show storage info
+              Alert.alert('Storage Usage', 'Storage usage information coming soon!');
             }}
           />
           <Divider />
@@ -215,7 +215,7 @@ export default function SettingsScreen() {
             description="Free up storage space"
             left={(props) => <List.Icon {...props} icon="delete-sweep" />}
             onPress={() => {
-              // Clear cache
+              Alert.alert('Clear Cache', 'Clear cache functionality coming soon!');
             }}
           />
         </SettingCard>
@@ -232,7 +232,7 @@ export default function SettingsScreen() {
             description="View our privacy policy"
             left={(props) => <List.Icon {...props} icon="shield-account" />}
             onPress={() => {
-              // Open privacy policy
+              Alert.alert('Privacy Policy', 'Privacy policy will be available at launch.');
             }}
           />
           <Divider />
@@ -241,7 +241,7 @@ export default function SettingsScreen() {
             description="View terms of service"
             left={(props) => <List.Icon {...props} icon="file-document" />}
             onPress={() => {
-              // Open terms of service
+              Alert.alert('Terms of Service', 'Terms of service will be available at launch.');
             }}
           />
           <Divider />
@@ -250,7 +250,7 @@ export default function SettingsScreen() {
             description="Get help and support"
             left={(props) => <List.Icon {...props} icon="help-circle" />}
             onPress={() => {
-              // Contact support
+              Alert.alert('Contact Support', 'Support contact information coming soon!');
             }}
           />
         </SettingCard>

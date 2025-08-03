@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Alert } from "react-native";
 import {
   Appbar,
   Card,
@@ -43,8 +43,8 @@ export default function CategoriesScreen() {
           },
         ]}
         onPress={() => {
-          // Navigate to category notes
-        }}
+              Alert.alert('Category Notes', `Viewing notes for ${category.name} - coming soon!`);
+            }}
       >
         <Card.Content>
           <View style={styles.categoryHeader}>
@@ -69,7 +69,7 @@ export default function CategoriesScreen() {
               icon="dots-vertical"
               size={20}
               onPress={() => {
-                // Show category options
+                Alert.alert('Category Options', 'Category options coming soon!');
               }}
             />
           </View>
@@ -87,7 +87,7 @@ export default function CategoriesScreen() {
         <Appbar.Action
           icon="sort"
           onPress={() => {
-            // Show sort options
+            Alert.alert('Sort Options', 'Sort options coming soon!');
           }}
         />
       </Appbar.Header>
@@ -159,7 +159,8 @@ export default function CategoriesScreen() {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         onPress={() => {
-          // Create new category
+          // Create new category - for now, show alert
+          Alert.alert('Create Category', 'Category creation feature coming soon!');
         }}
       />
     </SafeAreaView>

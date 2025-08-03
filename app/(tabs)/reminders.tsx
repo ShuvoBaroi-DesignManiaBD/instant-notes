@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Alert } from "react-native";
 import {
   Appbar,
   Card,
@@ -228,12 +228,22 @@ export default function RemindersScreen() {
         style={[
           styles.reminderCard,
           {
-            backgroundColor: theme.colors.surface,
-            opacity: reminder.isCompleted ? 0.7 : 1,
+            backgroundColor: theme.dark 
+              ? theme.colors.elevation.level2 
+              : '#ffffff',
+            borderColor: theme.dark 
+              ? theme.colors.outlineVariant 
+              : theme.colors.outline,
+            borderWidth: 1,
+            opacity: reminder.isCompleted ? 0.6 : 1,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: theme.dark ? 0.15 : 0.1,
+            shadowRadius: 8,
+            elevation: 4,
           },
         ]}
         onPress={() => {
-          // Navigate to the note
           router.push(`/note-editor?noteId=${reminder.noteId}`);
         }}
       >
@@ -245,24 +255,42 @@ export default function RemindersScreen() {
                   styles.reminderTitle,
                   reminder.isCompleted && {
                     textDecorationLine: "line-through",
+                    color: theme.colors.onSurfaceVariant,
                   },
                 ]}
-                numberOfLines={1}
+                numberOfLines={2}
               >
                 {reminder.title}
               </Title>
-              <Text style={styles.reminderTime}>
-                {reminder.dueDate.toLocaleString()}
+              <Text style={[
+                styles.reminderTime,
+                { color: theme.colors.onSurfaceVariant }
+              ]}>
+                {reminder.dueDate.toLocaleString('en-US', {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
               </Text>
             </View>
             <Switch
               value={reminder.isCompleted}
               onValueChange={() => toggleReminder(reminder.id)}
+              color={theme.colors.primary}
             />
           </View>
 
           {reminder.description && (
-            <Paragraph numberOfLines={2} style={styles.reminderDescription}>
+            <Paragraph 
+              numberOfLines={2} 
+              style={[
+                styles.reminderDescription,
+                { color: theme.colors.onSurfaceVariant }
+              ]}
+            >
               {reminder.description}
             </Paragraph>
           )}
@@ -274,9 +302,17 @@ export default function RemindersScreen() {
                 compact
                 style={[
                   styles.statusChip,
-                  { backgroundColor: getColorWithOpacity(timeStatus.color) },
+                  { 
+                    backgroundColor: getColorWithOpacity(timeStatus.color, 0.15),
+                    borderWidth: 1,
+                    borderColor: getColorWithOpacity(timeStatus.color, 0.3),
+                  },
                 ]}
-                textStyle={{ color: timeStatus.color }}
+                textStyle={{ 
+                  color: timeStatus.color, 
+                  fontSize: 12,
+                  fontWeight: '600'
+                }}
               >
                 {timeStatus.text}
               </Chip>
@@ -289,12 +325,23 @@ export default function RemindersScreen() {
                       reminder.priority === "high"
                         ? theme.colors.errorContainer
                         : reminder.priority === "medium"
-                        ? theme.colors.tertiaryContainer
+                        ? theme.colors.secondaryContainer
                         : theme.colors.surfaceVariant,
+                    borderWidth: 1,
+                    borderColor: theme.colors.outlineVariant,
                   },
                 ]}
+                textStyle={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: reminder.priority === "high"
+                    ? theme.colors.onErrorContainer
+                    : reminder.priority === "medium"
+                    ? theme.colors.onSecondaryContainer
+                    : theme.colors.onSurfaceVariant,
+                }}
               >
-                {reminder.priority}
+                {reminder.priority.toUpperCase()}
               </Chip>
             </View>
             <View style={styles.actionsContainer}>
@@ -306,13 +353,23 @@ export default function RemindersScreen() {
                     ? theme.colors.primary
                     : theme.colors.onSurfaceVariant
                 }
+                style={{
+                  margin: 0,
+                  padding: 4,
+                }}
                 onPress={() => toggleNotification(reminder.id)}
               />
               <IconButton
                 icon="dots-vertical"
                 size={20}
+                iconColor={theme.colors.onSurfaceVariant}
+                style={{
+                  margin: 0,
+                  padding: 4,
+                }}
                 onPress={() => {
-                  // Show reminder options in a future implementation
+                  // Navigate to the note editor for this reminder
+                  router.push(`../note-editor?noteId=${reminder.noteId}`);
                 }}
               />
             </View>
@@ -334,13 +391,15 @@ export default function RemindersScreen() {
         <Appbar.Action
           icon="calendar"
           onPress={() => {
-            // Show calendar view
+            // Show calendar view - for now, show alert
+            Alert.alert('Calendar View', 'Calendar view is coming soon!');
           }}
         />
         <Appbar.Action
           icon="filter"
           onPress={() => {
-            // Show filter options
+            // Show filter options - for now, show alert
+            Alert.alert('Filter Options', 'Filter options are coming soon!');
           }}
         />
       </Appbar.Header>
@@ -385,7 +444,7 @@ export default function RemindersScreen() {
         icon="plus"
         onPress={() => {
           // Navigate to create a new note with reminder enabled by default
-          router.push('/note-editor?reminderEnabled=true');
+          router.push('../note-editor?reminderEnabled=true');
         }}
       />
     </SafeAreaView>
@@ -401,39 +460,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   section: {
-    marginVertical: 16,
+    marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 16,
   },
   reminderCard: {
-    marginVertical: 8,
-    elevation: 2,
+    marginVertical: 12,
+    borderRadius: 12,
+    elevation: 4,
   },
   reminderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   reminderInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   reminderTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
+    lineHeight: 24,
     marginBottom: 4,
   },
   reminderTime: {
     fontSize: 14,
-    opacity: 0.7,
+    fontWeight: "500",
+    opacity: 0.8,
   },
   reminderDescription: {
-    marginBottom: 12,
+    marginBottom: 16,
+    fontSize: 14,
     lineHeight: 20,
+    opacity: 0.9,
   },
   reminderFooter: {
     flexDirection: "row",
@@ -447,9 +511,11 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     marginRight: 8,
+    borderRadius: 6,
   },
   priorityChip: {
     marginRight: 8,
+    borderRadius: 6,
   },
   actionsContainer: {
     flexDirection: "row",
@@ -459,23 +525,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 64,
+    paddingVertical: 80,
   },
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 20,
     marginBottom: 8,
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: 16,
     opacity: 0.7,
     textAlign: "center",
     paddingHorizontal: 32,
+    lineHeight: 22,
   },
   fab: {
     position: "absolute",
-    margin: 16,
+    margin: 20,
     right: 0,
     bottom: 0,
   },

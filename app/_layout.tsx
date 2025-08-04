@@ -36,8 +36,8 @@ function AppContent() {
 
   return (
     <PaperProvider theme={theme}>
-      <Stack initialRouteName="welcome">
-        <Stack.Screen name="welcome" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colorScheme === 'dark' ? darkTheme.colors.primary : lightTheme.colors.primary}/>

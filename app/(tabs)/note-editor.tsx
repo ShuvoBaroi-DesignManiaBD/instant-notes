@@ -29,6 +29,7 @@ interface LocalNote {
   deadline?: Date;
   reminder?: Date;
   reminderEnabled: boolean;
+  deadlineEnabled: boolean;
   category?: {
     id: number;
     name: string;
@@ -54,6 +55,7 @@ export default function NoteEditorScreen() {
     tags: [],
     priority: "medium",
     reminderEnabled: false,
+    deadlineEnabled: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     isArchived: false,
@@ -80,6 +82,7 @@ export default function NoteEditorScreen() {
         tags: [],
         priority: "medium",
         reminderEnabled: false,
+        deadlineEnabled: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isArchived: false,
@@ -108,6 +111,7 @@ export default function NoteEditorScreen() {
           deadline: existingNote.deadline ? new Date(existingNote.deadline) : undefined,
           reminder: existingNote.reminder ? new Date(existingNote.reminder) : undefined,
           reminderEnabled: Boolean(existingNote.reminder),
+          deadlineEnabled: Boolean(existingNote.deadline),
           category: category ? {
             id: category.id,
             name: category.name,
@@ -142,7 +146,7 @@ export default function NoteEditorScreen() {
         content: note.content,
         category_id: note.category?.id || 1, // Default to first category if none selected
         priority: note.priority,
-        deadline: note.deadline?.toISOString() || '',
+        deadline: note.deadlineEnabled && note.deadline ? note.deadline.toISOString() : '',
         reminder: note.reminderEnabled && note.reminder ? note.reminder.toISOString() : '',
         tags: note.tags.join(','),
         is_favorite: note.isFavorite,
@@ -213,6 +217,10 @@ export default function NoteEditorScreen() {
 
   const toggleReminder = () => {
     setNote((prev) => ({ ...prev, reminderEnabled: !prev.reminderEnabled }));
+  };
+
+  const toggleDeadline = () => {
+    setNote((prev) => ({ ...prev, deadlineEnabled: !prev.deadlineEnabled }));
   };
 
   const handleCategoryChange = (category: any) => {
@@ -290,8 +298,21 @@ export default function NoteEditorScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => router.back()} />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.BackAction 
+          onPress={() => router.back()} 
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
+        />
         <Appbar.Content
           title={
             isEditing
@@ -300,11 +321,13 @@ export default function NoteEditorScreen() {
                 : "Edit Note"
               : note.title || "Untitled"
           }
+          titleStyle={styles.headerTitle}
         />
         <Appbar.Action
           icon={note.isFavorite ? "heart" : "heart-outline"}
-          iconColor={note.isFavorite ? theme.colors.error : undefined}
+          iconColor={note.isFavorite ? "#FF6B6B" : "#FFFFFF"}
           onPress={toggleFavorite}
+          style={styles.headerAction}
         />
         <Menu
           visible={menuVisible}
@@ -312,7 +335,9 @@ export default function NoteEditorScreen() {
           anchor={
             <Appbar.Action
               icon="dots-vertical"
+              iconColor="#FFFFFF"
               onPress={() => setMenuVisible(true)}
+              style={styles.headerAction}
             />
           }
         >
@@ -366,29 +391,63 @@ export default function NoteEditorScreen() {
           </Text>
         </View>
 
-        {/* Deadline Picker */}
+        {/* Deadline Section */}
         {isEditing && (
-          <DateTimePickerComponent
-            value={note.deadline}
-            onChange={handleDeadlineChange}
-            label="Deadline"
-            placeholder="Set a deadline for this note"
-          />
+          <View style={styles.deadlineSection}>
+            <View style={styles.deadlineHeader}>
+              <Text style={styles.sectionTitle}>Deadline</Text>
+              <Switch
+                value={note.deadlineEnabled}
+                onValueChange={toggleDeadline}
+              />
+            </View>
+            
+            {note.deadlineEnabled && (
+              <DateTimePickerComponent
+                value={note.deadline}
+                onChange={handleDeadlineChange}
+                label=""
+                placeholder="Set a deadline for this note"
+              />
+            )}
+          </View>
         )}
 
-        {!isEditing && note.deadline && (
-          <Surface style={[styles.infoCard, { backgroundColor: theme.colors.errorContainer }]}>
-            <View style={styles.infoRow}>
-              <IconButton icon="calendar-clock" size={20} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Deadline</Text>
-                <Text style={styles.infoValue}>
-                  {note.deadline.toLocaleDateString()} at {note.deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+        {/* Reminder Section */}
+        <View style={styles.reminderSection}>
+          <View style={styles.reminderHeader}>
+            <Text style={styles.sectionTitle}>Reminder</Text>
+            {isEditing && (
+              <Switch
+                value={note.reminderEnabled}
+                onValueChange={toggleReminder}
+              />
+            )}
+          </View>
+          
+          {isEditing && note.reminderEnabled && (
+            <DateTimePickerComponent
+              value={note.reminder}
+              onChange={handleReminderChange}
+              label=""
+              placeholder="Set a reminder time"
+            />
+          )}
+          
+          {!isEditing && note.reminderEnabled && note.reminder && (
+            <Surface style={[styles.infoCard, { backgroundColor: theme.colors.primaryContainer }]}>
+              <View style={styles.infoRow}>
+                <IconButton icon="bell" size={20} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Reminder</Text>
+                  <Text style={styles.infoValue}>
+                    {note.reminder.toLocaleDateString()} at {note.reminder.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Surface>
-        )}
+            </Surface>
+          )}
+        </View>
 
         {/* Category Selector - Moved to top after deadline */}
         {isEditing && (
@@ -548,42 +607,6 @@ export default function NoteEditorScreen() {
           )}
         </View>
 
-        {/* Reminder Section */}
-        <View style={styles.reminderSection}>
-          <View style={styles.reminderHeader}>
-            <Text style={styles.sectionTitle}>Reminder</Text>
-            {isEditing && (
-              <Switch
-                value={note.reminderEnabled}
-                onValueChange={toggleReminder}
-              />
-            )}
-          </View>
-          
-          {isEditing && note.reminderEnabled && (
-            <DateTimePickerComponent
-              value={note.reminder}
-              onChange={handleReminderChange}
-              label="Reminder Time"
-              placeholder="Set a reminder time"
-            />
-          )}
-          
-          {!isEditing && note.reminderEnabled && note.reminder && (
-            <Surface style={[styles.infoCard, { backgroundColor: theme.colors.primaryContainer }]}>
-              <View style={styles.infoRow}>
-                <IconButton icon="bell" size={20} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Reminder</Text>
-                  <Text style={styles.infoValue}>
-                    {note.reminder.toLocaleDateString()} at {note.reminder.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-              </View>
-            </Surface>
-          )}
-        </View>
-
         {/* Rich Text Content */}
         <View style={styles.contentSection}>
           <Text style={styles.sectionTitle}>Content</Text>
@@ -596,6 +619,22 @@ export default function NoteEditorScreen() {
             editable={isEditing}
           />
         </View>
+        
+        {!isEditing && note.deadlineEnabled && note.deadline && (
+          <Surface style={[styles.infoCard, { backgroundColor: theme.colors.errorContainer }]}>
+            <View style={styles.infoRow}>
+              <IconButton icon="calendar-clock" size={20} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Deadline</Text>
+                <Text style={styles.infoValue}>
+                  {note.deadline.toLocaleDateString()} at {note.deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            </View>
+          </Surface>
+        )}
+
+        
 
 
       </ScrollView>
@@ -649,6 +688,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    borderBottomWidth: 0,
+    paddingHorizontal: 4,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    marginHorizontal: 2,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
@@ -663,14 +724,14 @@ const styles = StyleSheet.create({
   metadata: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 24,
+    marginBottom: 12,
   },
   metadataText: {
     fontSize: 12,
     opacity: 0.7,
   },
   tagsSection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   tagsHeader: {
     flexDirection: "row",
@@ -705,7 +766,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   prioritySection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   priorityButton: {
     marginTop: 8,
@@ -716,13 +777,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   reminderSection: {
-    marginBottom: 24,
+    marginBottom: 6,
   },
   reminderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  deadlineSection: {
+    marginBottom: 6,
+  },
+  deadlineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
   },
   infoCard: {
     borderRadius: 12,
@@ -747,14 +817,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   categorySection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   categoryChip: {
     alignSelf: 'flex-start',
     marginTop: 8,
   },
   contentSection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   contentInput: {
     borderWidth: 1,

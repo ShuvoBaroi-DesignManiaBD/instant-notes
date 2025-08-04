@@ -74,9 +74,11 @@ export default function DateTimePickerComponent({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: theme.colors.onSurface }]}>
+      {
+        label && <Text style={[styles.label, { color: theme.colors.onSurface }]}>
         {label}
       </Text>
+      }
       
       <Surface style={[styles.surface, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.content}>

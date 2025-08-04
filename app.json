@@ -1,22 +1,32 @@
 {
   "expo": {
-    "name": "instant_notes",
-    "slug": "instant_notes",
+    "name": "Instant Notes",
+    "slug": "instant-notes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "instantnotes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "description": "Capture your thoughts instantly. Organize your ideas effortlessly.",
+    "privacy": "public",
+    "platforms": ["ios", "android", "web"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shuvobaroi.instantnotes"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0072bb"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.shuvobaroi.instantnotes",
+      "versionCode": 1,
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",

@@ -11,6 +11,7 @@ export interface Note {
   deadline?: string;
   reminder?: string;
   tags: string;
+  is_favorite: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -139,6 +140,7 @@ class DatabaseService {
         deadline DATETIME,
         reminder DATETIME,
         tags TEXT DEFAULT '',
+        is_favorite BOOLEAN DEFAULT FALSE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES categories (id)
@@ -162,6 +164,15 @@ class DatabaseService {
     try {
       await this.db.execAsync(`
         ALTER TABLE reminders ADD COLUMN notification_enabled BOOLEAN DEFAULT TRUE;
+      `);
+    } catch (error) {
+      // Column might already exist, ignore error
+    }
+    
+    // Add is_favorite column if it doesn't exist (for existing databases)
+    try {
+      await this.db.execAsync(`
+        ALTER TABLE notes ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE;
       `);
     } catch (error) {
       // Column might already exist, ignore error
@@ -203,6 +214,7 @@ class DatabaseService {
         deadline: note.deadline || '',
         reminder: note.reminder || '',
         tags: note.tags,
+        is_favorite: note.is_favorite || false,
         created_at: now,
         updated_at: now
       };
@@ -215,8 +227,8 @@ class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     const result = await this.db.runAsync(
-      `INSERT INTO notes (title, content, category_id, priority, deadline, reminder, tags) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO notes (title, content, category_id, priority, deadline, reminder, tags, is_favorite) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         note.title,
         note.content,
@@ -224,7 +236,8 @@ class DatabaseService {
         note.priority,
         note.deadline || null,
         note.reminder || null,
-        note.tags
+        note.tags,
+        note.is_favorite || false
       ]
     );
 
@@ -323,6 +336,10 @@ class DatabaseService {
     if (note.tags !== undefined) {
       fields.push('tags = ?');
       values.push(note.tags);
+    }
+    if (note.is_favorite !== undefined) {
+      fields.push('is_favorite = ?');
+      values.push(note.is_favorite);
     }
 
     fields.push('updated_at = CURRENT_TIMESTAMP');
@@ -519,6 +536,38 @@ class DatabaseService {
        'UPDATE reminders SET notification_enabled = NOT notification_enabled WHERE id = ?',
        [id]
      );
+   }
+
+   async toggleNoteFavorite(id: number): Promise<void> {
+     if (this.isWeb) {
+       const noteIndex = this.webNotes.findIndex(note => note.id === id);
+       if (noteIndex !== -1) {
+         this.webNotes[noteIndex].is_favorite = !this.webNotes[noteIndex].is_favorite;
+         await this.saveWebData();
+       }
+       return;
+     }
+
+     if (!this.db) throw new Error('Database not initialized');
+
+     await this.db.runAsync(
+       'UPDATE notes SET is_favorite = NOT is_favorite WHERE id = ?',
+       [id]
+     );
+   }
+
+   async getFavoriteNotes(): Promise<Note[]> {
+     if (this.isWeb) {
+       return this.webNotes.filter(note => note.is_favorite);
+     }
+
+     if (!this.db) throw new Error('Database not initialized');
+
+     const result = await this.db.getAllAsync(
+       'SELECT * FROM notes WHERE is_favorite = TRUE ORDER BY updated_at DESC'
+     );
+
+     return result as Note[];
    }
 }
 

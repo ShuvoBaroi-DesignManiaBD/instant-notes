@@ -1,14 +1,10 @@
-import { Image } from 'expo-image';
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, StyleSheet, RefreshControl, Alert, FlatList } from "react-native";
 import {
   Appbar,
-  FAB,
   Card,
   Title,
   Paragraph,
-  Chip,
-  Searchbar,
   useTheme,
   Text,
   ActivityIndicator,
@@ -20,21 +16,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDatabaseContext } from '../../contexts/DatabaseContext';
 import { Note } from '../../services/database';
 
-export default function HomeScreen() {
+export default function FavoritesScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteNotes, setFavoriteNotes] = useState<Note[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const { notes, isLoading, refreshNotes, deleteNote, toggleNoteFavorite } = useDatabaseContext();
+  const { getFavoriteNotes, toggleNoteFavorite, deleteNote } = useDatabaseContext();
 
-  // Notes are automatically loaded by DatabaseContext
+  const loadFavoriteNotes = async () => {
+    try {
+      setIsLoading(true);
+      const favorites = await getFavoriteNotes();
+      setFavoriteNotes(favorites);
+    } catch (error) {
+      console.error('Error loading favorite notes:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFavoriteNotes();
+  }, []);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await refreshNotes();
+    await loadFavoriteNotes();
     setRefreshing(false);
-  }, [refreshNotes]);
+  }, []);
+
+  const handleToggleFavorite = async (noteId: number) => {
+    try {
+      await toggleNoteFavorite(noteId);
+      await loadFavoriteNotes(); // Refresh the favorites list
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite status');
+    }
+  };
 
   const handleDeleteNote = async (noteId: string | number) => {
     Alert.alert(
@@ -49,6 +70,7 @@ export default function HomeScreen() {
             try {
               const id = typeof noteId === 'string' ? parseInt(noteId) : noteId;
               await deleteNote(id);
+              await loadFavoriteNotes(); // Refresh the favorites list
             } catch (error) {
               console.error('Error deleting note:', error);
               Alert.alert('Error', 'Failed to delete note');
@@ -58,28 +80,6 @@ export default function HomeScreen() {
       ]
     );
   };
-
-  const handleToggleFavorite = async (noteId: number) => {
-    try {
-      await toggleNoteFavorite(noteId);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      Alert.alert('Error', 'Failed to update favorite status');
-    }
-  };
-
-  const filteredNotes = notes.filter(
-    (note) => {
-      const tags = note.tags ? note.tags.split(',').filter(tag => tag.trim()) : [];
-      return (
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-  );
 
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
@@ -138,9 +138,9 @@ export default function HomeScreen() {
             </Title>
             <View style={styles.headerButtons}>
               <IconButton
-                icon={note.is_favorite ? "heart" : "heart-outline"}
+                icon="heart"
                 size={20}
-                iconColor={note.is_favorite ? theme.colors.error : theme.colors.onSurfaceVariant}
+                iconColor={theme.colors.error}
                 onPress={() => handleToggleFavorite(note.id)}
                 style={styles.favoriteButton}
               />
@@ -299,51 +299,36 @@ export default function HomeScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <Appbar.Header>
-        <Appbar.Content title="Notes" />
+        <Appbar.Content title="Favorites" />
         <Appbar.Action
           icon={viewMode === "list" ? "view-grid" : "view-list"}
           onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
         />
-        <Appbar.Action
-          icon="magnify"
-          onPress={() => router.push("search")}
-        />
       </Appbar.Header>
-
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Search notes..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
-        />
-      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>Loading notes...</Text>
+          <Text style={styles.loadingText}>Loading favorites...</Text>
         </View>
       ) : (
-        filteredNotes.length === 0 ? (
+        favoriteNotes.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
-              name="document-text-outline"
+              name="heart-outline"
               size={64}
               color={theme.colors.onSurfaceVariant}
             />
             <Text style={styles.emptyStateText}>
-              {searchQuery ? "No notes found" : "No notes yet"}
+              No favorite notes yet
             </Text>
             <Text style={styles.emptyStateSubtext}>
-              {searchQuery
-                ? "Try adjusting your search terms"
-                : "Tap the + button to create your first note"}
+              Tap the heart icon on any note to add it to your favorites
             </Text>
           </View>
         ) : (
           <FlatList
-            data={filteredNotes}
+            data={favoriteNotes}
             renderItem={({ item }) => renderNoteCard(item)}
             keyExtractor={(item) => item.id.toString()}
             numColumns={viewMode === "grid" ? 2 : 1}
@@ -356,12 +341,6 @@ export default function HomeScreen() {
           />
         )
       )}
-
-      <FAB
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        icon="plus"
-        onPress={() => router.push("note-editor")}
-      />
     </SafeAreaView>
   );
 }
@@ -369,13 +348,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  searchbar: {
-    elevation: 2,
   },
   content: {
     flexGrow: 1,
@@ -593,11 +565,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingHorizontal: 32,
-  },
-  fab: {
-    position: "absolute",
-    margin: 20,
-    right: 0,
-    bottom: 0,
   },
 });

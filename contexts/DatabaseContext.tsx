@@ -31,6 +31,8 @@ interface DatabaseContextType {
   deleteCategory: (id: number) => Promise<void>;
   getUpcomingReminders: () => Promise<Reminder[]>;
   markReminderCompleted: (reminderId: string) => Promise<void>;
+  toggleNoteFavorite: (id: number) => Promise<void>;
+  getFavoriteNotes: () => Promise<Note[]>;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(
@@ -233,6 +235,25 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
     }
   };
 
+  const toggleNoteFavorite = async (id: number) => {
+    try {
+      await databaseService.toggleNoteFavorite(id);
+      await refreshNotes();
+    } catch (error) {
+      console.error("Failed to toggle note favorite:", error);
+      throw error;
+    }
+  };
+
+  const getFavoriteNotes = async (): Promise<Note[]> => {
+    try {
+      return await databaseService.getFavoriteNotes();
+    } catch (error) {
+      console.error("Failed to get favorite notes:", error);
+      return [];
+    }
+  };
+
   const value: DatabaseContextType = {
     notes,
     categories,
@@ -247,6 +268,8 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
     deleteCategory,
     getUpcomingReminders,
     markReminderCompleted,
+    toggleNoteFavorite,
+    getFavoriteNotes,
   };
 
   return (

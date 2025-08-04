@@ -117,7 +117,7 @@ export default function NoteEditorScreen() {
           createdAt: new Date(existingNote.created_at),
           updatedAt: new Date(existingNote.updated_at),
           isArchived: false,
-          isFavorite: false,
+          isFavorite: existingNote.is_favorite || false,
         };
         setNote(loadedNote);
       }
@@ -145,6 +145,7 @@ export default function NoteEditorScreen() {
         deadline: note.deadline?.toISOString() || '',
         reminder: note.reminderEnabled && note.reminder ? note.reminder.toISOString() : '',
         tags: note.tags.join(','),
+        is_favorite: note.isFavorite,
       };
       
       try {

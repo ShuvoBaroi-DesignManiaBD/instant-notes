@@ -231,10 +231,10 @@ export default function RemindersScreen() {
             backgroundColor: theme.dark 
               ? theme.colors.elevation.level2 
               : '#ffffff',
-            borderColor: theme.dark 
-              ? theme.colors.outlineVariant 
-              : theme.colors.outline,
-            borderWidth: 1,
+            // borderColor: theme.dark 
+            //   ? theme.colors.outlineVariant 
+            //   : theme.colors.outline,
+            // borderWidth: 1,
             opacity: reminder.isCompleted ? 0.6 : 1,
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 2 },
@@ -457,10 +457,8 @@ export default function RemindersScreen() {
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
-        onPress={() => {
-          // Navigate to create a new note with reminder enabled by default
-          router.push('../note-editor?reminderEnabled=true');
-        }}
+        color="#fff"
+        onPress={() => router.push("note-editor")}
       />
     </SafeAreaView>
   );

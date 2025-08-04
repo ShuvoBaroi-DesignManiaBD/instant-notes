@@ -109,10 +109,10 @@ export default function FavoritesScreen() {
             backgroundColor: theme.dark 
               ? theme.colors.elevation.level2 
               : '#ffffff',
-            borderColor: theme.dark 
-              ? theme.colors.outlineVariant 
-              : theme.colors.outline,
-            borderWidth: 1,
+            // borderColor: theme.dark 
+            //   ? theme.colors.outlineVariant 
+            //   : theme.colors.outline,
+            // borderWidth: 1,
             borderRadius: 12,
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 2 },

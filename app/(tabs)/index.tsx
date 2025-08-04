@@ -355,6 +355,7 @@ export default function HomeScreen() {
         ) : (
           <FlatList
             data={filteredNotes}
+            style={styles.content}
             renderItem={({ item }) => renderNoteCard(item)}
             keyExtractor={(item) => item.id.toString()}
             numColumns={viewMode === "grid" ? 2 : 1}
@@ -391,7 +392,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 6
   },
   noteCard: {
     borderRadius: 12,
@@ -402,13 +404,14 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     flex: 1,
-    marginVertical: 4,
+    marginVertical: 6,
     marginHorizontal: 4,
     maxWidth: '48%',
   },
   gridRow: {
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
+    gap:6
   },
   cardContent: {
     padding: 16,

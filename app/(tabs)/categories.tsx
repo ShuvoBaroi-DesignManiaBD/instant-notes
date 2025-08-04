@@ -131,10 +131,8 @@ export default function CategoriesScreen() {
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
-        onPress={() => {
-          // Create new category - for now, show alert
-          Alert.alert('Create Category', 'Category creation feature coming soon!');
-        }}
+        color="#fff"
+        onPress={() => router.push("note-editor")}
       />
     </SafeAreaView>
   );

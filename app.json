@@ -4,7 +4,7 @@
     "slug": "instant-notes",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon.svg",
+    "icon": "./assets/images/icon.png",
     "scheme": "instantnotes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon.svg",
+        "foregroundImage": "./assets/images/adaptive-icon-new.png",
         "backgroundColor": "#0072bb"
       },
       "edgeToEdgeEnabled": true,

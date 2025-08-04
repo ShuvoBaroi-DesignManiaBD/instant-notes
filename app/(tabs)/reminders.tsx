@@ -386,21 +386,36 @@ export default function RemindersScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.Content title="Reminders" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.Content 
+          title="Reminders" 
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action
           icon="calendar"
           onPress={() => {
             // Show calendar view - for now, show alert
             Alert.alert('Calendar View', 'Calendar view is coming soon!');
           }}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
         <Appbar.Action
           icon="filter"
           onPress={() => {
-            // Show filter options - for now, show alert
-            Alert.alert('Filter Options', 'Filter options are coming soon!');
+            // Filter functionality
           }}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
       </Appbar.Header>
 
@@ -545,5 +560,21 @@ const styles = StyleSheet.create({
     margin: 20,
     right: 0,
     bottom: 0,
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

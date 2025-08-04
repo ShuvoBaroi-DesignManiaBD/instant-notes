@@ -62,13 +62,27 @@ export default function SettingsScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.Content title="Settings" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.Content 
+          title="Settings" 
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action
           icon="information"
           onPress={() => {
             Alert.alert('App Information', 'Instant Notes v1.0.0\n\nA modern note-taking app developed by Shuvo Baroi');
           }}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
       </Appbar.Header>
 
@@ -293,5 +307,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     textAlign: "center",
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

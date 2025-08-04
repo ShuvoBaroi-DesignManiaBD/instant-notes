@@ -44,6 +44,8 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [allNotes, setAllNotes] = useState<Note[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchType, setSearchType] = useState<"all" | "notes" | "categories">(
     "all"
@@ -58,16 +60,27 @@ export default function SearchScreen() {
 
   useEffect(() => {
     loadAllTags();
+    loadAllNotes();
+    loadAllCategories();
   }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === "" && selectedTags.length === 0) {
-      setFilteredNotes([]);
-      setFilteredCategories([]);
+      // When no search query, still respect the search type
+      if (searchType === "notes") {
+        setFilteredNotes(allNotes);
+        setFilteredCategories([]);
+      } else if (searchType === "categories") {
+        setFilteredNotes([]);
+        setFilteredCategories(allCategories);
+      } else {
+        setFilteredNotes(allNotes);
+        setFilteredCategories(allCategories);
+      }
       return;
     }
     searchNotes();
-  }, [searchQuery, selectedTags]);
+  }, [searchQuery, selectedTags, allNotes, allCategories, searchType]);
 
   const loadAllTags = async () => {
     if (!db) return;
@@ -88,52 +101,115 @@ export default function SearchScreen() {
     }
   };
 
-  const searchNotes = async () => {
+  const loadAllNotes = async () => {
     if (!db) return;
-    setLoading(true);
     try {
-      let query = 'SELECT * FROM notes WHERE isArchived = 0';
-      const params: any[] = [];
-
-      if (searchQuery.trim()) {
-        query += ' AND (title LIKE ? OR content LIKE ?)';
-        const searchTerm = `%${searchQuery.trim()}%`;
-        params.push(searchTerm, searchTerm);
-      }
-
-      const result = await db.getAllAsync(query, params);
-      let notes = result.map((note: any) => ({
-        ...note,
+      const result = await db.getAllAsync('SELECT * FROM notes ORDER BY updated_at DESC');
+      const notes = result.map((note: any) => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        categoryId: note.category_id,
+        priority: note.priority,
         tags: note.tags ? JSON.parse(note.tags) : [],
         deadline: note.deadline ? new Date(note.deadline) : undefined,
-        createdAt: new Date(note.createdAt),
-        updatedAt: new Date(note.updatedAt),
-        isArchived: Boolean(note.isArchived),
-        isFavorite: Boolean(note.isFavorite),
+        createdAt: new Date(note.created_at),
+        updatedAt: new Date(note.updated_at),
+        isArchived: false, // Since we don't have this column, default to false
+        isFavorite: Boolean(note.is_favorite),
       }));
+      setAllNotes(notes);
+      setFilteredNotes(notes);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    }
+  };
 
-      // Filter by selected tags
-      if (selectedTags.length > 0) {
+  const loadAllCategories = async () => {
+    if (!db) return;
+    try {
+      // Get all categories with note counts
+      const result = await db.getAllAsync(`
+        SELECT 
+          c.id,
+          c.name,
+          c.color,
+          COUNT(n.id) as noteCount
+        FROM categories c
+        LEFT JOIN notes n ON c.id = n.category_id
+        GROUP BY c.id, c.name, c.color
+        ORDER BY c.name
+      `);
+      const categories = result.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        color: cat.color,
+        noteCount: cat.noteCount || 0,
+      }));
+      setAllCategories(categories);
+      setFilteredCategories(categories);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Fallback: create some default categories if table doesn't exist
+      const defaultCategories = [
+        { id: '1', name: 'Personal', color: '#FF6B6B', noteCount: 0 },
+        { id: '2', name: 'Work', color: '#4ECDC4', noteCount: 0 },
+        { id: '3', name: 'Ideas', color: '#45B7D1', noteCount: 0 },
+      ];
+      setAllCategories(defaultCategories);
+      setFilteredCategories(defaultCategories);
+    }
+  };
+
+  const searchNotes = async () => {
+    setLoading(true);
+    try {
+      let notes = [...allNotes];
+      let categories = [...allCategories];
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        
+        // Only filter notes if searchType includes notes
+        if (searchType === "all" || searchType === "notes") {
+          notes = notes.filter((note: Note) =>
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query) ||
+            note.tags.some((tag: string) =>
+              tag.toLowerCase().includes(query)
+            )
+          );
+        } else {
+          notes = [];
+        }
+
+        // Only filter categories if searchType includes categories
+        if (searchType === "all" || searchType === "categories") {
+          categories = categories.filter((category: Category) =>
+            category.name.toLowerCase().includes(query)
+          );
+        } else {
+          categories = [];
+        }
+      } else {
+        // No search query, filter by searchType
+        if (searchType === "notes") {
+          categories = [];
+        } else if (searchType === "categories") {
+          notes = [];
+        }
+      }
+
+      // Filter by selected tags (only applies to notes)
+      if (selectedTags.length > 0 && (searchType === "all" || searchType === "notes")) {
         notes = notes.filter((note: Note) =>
           selectedTags.every((tag) => note.tags.includes(tag))
         );
       }
 
-      // Filter by search query in tags
-      if (searchQuery.trim()) {
-        notes = notes.filter((note: Note) =>
-          note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          note.tags.some((tag: string) =>
-            tag.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
-      }
-
       setFilteredNotes(notes);
-      
-      // For categories, we'll keep it simple for now
-      setFilteredCategories([]);
+      setFilteredCategories(categories);
     } catch (error) {
       console.error('Error searching notes:', error);
     } finally {
@@ -227,32 +303,55 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
-  const showResults = searchQuery.trim() !== "" || selectedTags.length > 0;
-  const hasResults = filteredNotes.length > 0 || filteredCategories.length > 0;
+  const showResults = true; // Always show results since we load all data
+  const hasResults = (
+    (searchType === "all" && (filteredNotes.length > 0 || filteredCategories.length > 0)) ||
+    (searchType === "notes" && filteredNotes.length > 0) ||
+    (searchType === "categories" && filteredCategories.length > 0)
+  );
+  const isSearching = searchQuery.trim() !== "" || selectedTags.length > 0;
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="Search" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.BackAction 
+          onPress={() => router.back()} 
+          iconColor="#FFFFFF"
+        />
+        <Appbar.Content 
+          title="Search" 
+          titleStyle={styles.headerTitle}
+        />
         {(searchQuery.trim() !== "" || selectedTags.length > 0) && (
-          <Appbar.Action icon="close" onPress={clearFilters} />
+          <Appbar.Action 
+            icon="close" 
+            onPress={clearFilters} 
+            iconColor="#FFFFFF"
+            style={styles.headerAction}
+          />
         )}
       </Appbar.Header>
 
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Search notes, categories, tags..."
-          onChangeText={handleSearch}
-          value={searchQuery}
-          style={styles.searchBar}
-          icon="magnify"
-        />
-      </View>
+      <Searchbar
+        placeholder="Search notes, categories, tags..."
+        onChangeText={handleSearch}
+        value={searchQuery}
+        style={[styles.searchBar,{marginTop: 20, marginBottom: 12, marginHorizontal: 12}]}
+        icon="magnify"
+      />
 
-      {/* Filter Tags */}
+      {/* Filter Tags
       <View style={styles.filtersContainer}>
         <Text style={styles.filtersTitle}>Filter by tags:</Text>
         <FlatList
@@ -277,7 +376,7 @@ export default function SearchScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterTagsList}
         />
-      </View>
+      </View> */}
 
       {/* Search Type Selector */}
       <View style={styles.searchTypeContainer}>
@@ -309,7 +408,7 @@ export default function SearchScreen() {
 
       {/* Results or Recent Searches */}
       <View style={styles.resultsContainer}>
-        {!showResults ? (
+        {!isSearching && filteredNotes.length === 0 ? (
           <View style={styles.recentSearchesContainer}>
             <Text style={styles.sectionTitle}>Recent Searches</Text>
             {recentSearches.map(renderRecentSearch)}
@@ -343,13 +442,18 @@ export default function SearchScreen() {
         ) : (
           <View style={styles.noResultsContainer}>
             <Ionicons
-              name="search-outline"
+              name={isSearching ? "search-outline" : "document-outline"}
               size={64}
               color={theme.colors.onSurfaceVariant}
             />
-            <Text style={styles.noResultsText}>No results found</Text>
+            <Text style={styles.noResultsText}>
+              {isSearching ? "No results found" : "No notes yet"}
+            </Text>
             <Text style={styles.noResultsSubtext}>
-              Try adjusting your search terms or filters
+              {isSearching 
+                ? "Try adjusting your search terms or filters"
+                : "Create your first note to get started"
+              }
             </Text>
           </View>
         )}
@@ -503,5 +607,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     textAlign: "center",
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

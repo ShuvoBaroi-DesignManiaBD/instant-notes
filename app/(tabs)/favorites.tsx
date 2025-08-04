@@ -298,11 +298,25 @@ export default function FavoritesScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.Content title="Favorites" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.Content 
+          title="Favorites" 
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action
           icon={viewMode === "list" ? "view-grid" : "view-list"}
           onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
       </Appbar.Header>
 
@@ -565,5 +579,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingHorizontal: 32,
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

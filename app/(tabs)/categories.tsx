@@ -82,13 +82,27 @@ export default function CategoriesScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.Content title="Categories" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.Content 
+          title="Categories" 
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action
           icon="sort"
           onPress={() => {
             Alert.alert('Sort Options', 'Sort options coming soon!');
           }}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
       </Appbar.Header>
 
@@ -233,5 +247,21 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textAlign: "center",
     paddingHorizontal: 32,
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

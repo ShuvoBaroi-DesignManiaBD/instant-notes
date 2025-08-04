@@ -111,8 +111,8 @@ export default function HomeScreen() {
               : '#ffffff',
             borderColor: theme.dark 
               ? theme.colors.outlineVariant 
-              : theme.colors.outline,
-            borderWidth: 1,
+              : '',
+            
             borderRadius: 12,
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 2 },
@@ -298,26 +298,37 @@ export default function HomeScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header>
-        <Appbar.Content title="Notes" />
+      <Appbar.Header 
+        style={[
+          styles.modernHeader,
+          {
+            backgroundColor: theme.colors.primary,
+            shadowColor: theme.colors.primary,
+            // borderBottomEndRadius: 60,
+            // borderBottomStartRadius: 60,
+          }
+        ]}
+        statusBarHeight={0}
+      >
+        <Appbar.Content 
+          title="Notes" 
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action
           icon={viewMode === "list" ? "view-grid" : "view-list"}
           onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
         <Appbar.Action
           icon="magnify"
           onPress={() => router.push("search")}
+          iconColor="#FFFFFF"
+          style={styles.headerAction}
         />
       </Appbar.Header>
 
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Search notes..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
-        />
-      </View>
+
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -360,6 +371,7 @@ export default function HomeScreen() {
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
+        color="#fff"
         onPress={() => router.push("note-editor")}
       />
     </SafeAreaView>
@@ -599,5 +611,23 @@ const styles = StyleSheet.create({
     margin: 20,
     right: 0,
     bottom: 0,
+  },
+  modernHeader: {
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    // borderBottomLeftRadius: 30,
+    // borderBottomRightRadius: 30,
+  },
+  headerAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

@@ -11,6 +11,7 @@ import { notificationService } from '../services/notifications';
 import { Note, Category, Reminder } from '../types';
 
 interface DatabaseContextType {
+  db: SQLite.SQLiteDatabase | null;
   notes: Note[];
   categories: Category[];
   isLoading: boolean;
@@ -255,6 +256,7 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
   };
 
   const value: DatabaseContextType = {
+    db: databaseService.getDatabase(),
     notes,
     categories,
     isLoading,

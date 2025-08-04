@@ -40,6 +40,10 @@ class DatabaseService {
   private nextNoteId: number = 1;
   private nextCategoryId: number = 1;
 
+  getDatabase(): SQLite.SQLiteDatabase | null {
+    return this.db;
+  }
+
   async init() {
     try {
       if (this.isWeb) {

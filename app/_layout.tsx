@@ -12,7 +12,7 @@ const lightTheme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#007AFF',
+    primary: '#0072bb',
     secondary: '#34C759',
     tertiary: '#FF9500',
     error: '#FF3B30',
@@ -23,7 +23,7 @@ const darkTheme = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: '#007AFF',
+    primary: '#0072bb',
     secondary: '#34C759',
     tertiary: '#FF9500',
     error: '#FF3B30',
@@ -39,7 +39,7 @@ function AppContent() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} backgroundColor={colorScheme === 'dark' ? darkTheme.colors.primary : lightTheme.colors.primary}/>
     </PaperProvider>
   );
 }

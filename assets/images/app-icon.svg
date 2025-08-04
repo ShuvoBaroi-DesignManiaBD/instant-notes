@@ -1,0 +1,34 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="512" cy="512" r="512" fill="#0072bb"/>
+  
+  <!-- Document Icon -->
+  <g transform="translate(256, 192)">
+    <!-- Document Body -->
+    <rect x="0" y="80" width="384" height="480" rx="24" ry="24" fill="#FFFFFF"/>
+    
+    <!-- Document Header/Fold -->
+    <path d="M288 0 L384 96 L384 80 Q384 35.8 355.2 17.9 Q326.4 0 288 0 Z" fill="#E8F4FD"/>
+    <rect x="0" y="0" width="288" height="96" rx="24" ry="24" fill="#FFFFFF"/>
+    
+    <!-- Text Lines -->
+    <rect x="48" y="160" width="288" height="16" rx="8" fill="#0072bb" opacity="0.3"/>
+    <rect x="48" y="200" width="240" height="16" rx="8" fill="#0072bb" opacity="0.3"/>
+    <rect x="48" y="240" width="264" height="16" rx="8" fill="#0072bb" opacity="0.3"/>
+    <rect x="48" y="280" width="192" height="16" rx="8" fill="#0072bb" opacity="0.3"/>
+    
+    <rect x="48" y="340" width="288" height="16" rx="8" fill="#0072bb" opacity="0.2"/>
+    <rect x="48" y="380" width="216" height="16" rx="8" fill="#0072bb" opacity="0.2"/>
+    <rect x="48" y="420" width="264" height="16" rx="8" fill="#0072bb" opacity="0.2"/>
+  </g>
+  
+  <!-- Subtle Shadow/Depth -->
+  <circle cx="512" cy="512" r="512" fill="url(#shadowGradient)" opacity="0.1"/>
+  
+  <defs>
+    <radialGradient id="shadowGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.3"/>
+    </radialGradient>
+  </defs>
+</svg>

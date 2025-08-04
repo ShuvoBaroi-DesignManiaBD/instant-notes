@@ -111,48 +111,7 @@ export default function CategoriesScreen() {
           )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <Card
-            style={[
-              styles.actionCard,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <Card.Content>
-              <View style={styles.actionRow}>
-                <Ionicons
-                  name="archive"
-                  size={24}
-                  color={theme.colors.primary}
-                />
-                <View style={styles.actionInfo}>
-                  <Title style={styles.actionTitle}>Archived Notes</Title>
-                  <Text style={styles.actionSubtitle}>View archived notes</Text>
-                </View>
-                <IconButton icon="chevron-right" size={20} />
-              </View>
-            </Card.Content>
-          </Card>
 
-          <Card
-            style={[
-              styles.actionCard,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <Card.Content>
-              <View style={styles.actionRow}>
-                <Ionicons name="heart" size={24} color={theme.colors.error} />
-                <View style={styles.actionInfo}>
-                  <Title style={styles.actionTitle}>Favorites</Title>
-                  <Text style={styles.actionSubtitle}>Your favorite notes</Text>
-                </View>
-                <IconButton icon="chevron-right" size={20} />
-              </View>
-            </Card.Content>
-          </Card>
-        </View>
       </ScrollView>
 
       <FAB

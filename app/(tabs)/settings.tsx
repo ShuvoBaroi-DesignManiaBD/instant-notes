@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View, Alert } from "react-native";
+import { ScrollView, StyleSheet, View, Alert, Linking, Pressable } from "react-native";
 import {
   Appbar,
   Button,
@@ -67,7 +67,7 @@ export default function SettingsScreen() {
         <Appbar.Action
           icon="information"
           onPress={() => {
-            Alert.alert('App Information', 'Instant Notes v1.0.0\n\nA modern note-taking app built with React Native and Expo.');
+            Alert.alert('App Information', 'Instant Notes v1.0.0\n\nA modern note-taking app developed by Shuvo Baroi');
           }}
         />
       </Appbar.Header>
@@ -257,7 +257,9 @@ export default function SettingsScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Made with ❤️ for note-taking enthusiasts
+            An app from <Pressable onPress={() => Linking.openURL('https://designmaniabd.com')}>
+              <Text style={{ color: 'skyblue', fontWeight: "bold", textDecorationLine: 'none', }}>Design Mania BD</Text>
+            </Pressable>
           </Text>
         </View>
       </ScrollView>

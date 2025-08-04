@@ -362,10 +362,12 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 16,
   },
   content: {
     flexGrow: 1,
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   noteCard: {
     borderRadius: 12,

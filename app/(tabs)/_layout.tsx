@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 
-import { HapticTab } from '@/components/HapticTab';
+import { HapticTab } from '../../components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 
 export default function TabLayout() {

@@ -16,8 +16,13 @@ config.resolver.alias = {
   ...config.resolver.alias,
   // Provide a fallback for SQLite on web
   'expo-sqlite': require.resolve('expo-sqlite'),
-  // Add @ alias for path resolution
-  '@': __dirname,
+};
+
+// Configure path mapping for @ alias
+const path = require('path');
+config.resolver.alias = {
+  ...config.resolver.alias,
+  '@': path.resolve(__dirname),
 };
 
 // Optimization settings for production builds

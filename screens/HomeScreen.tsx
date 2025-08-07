@@ -15,6 +15,8 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Note } from "../types";
+import { StatusBar } from "react-native";
+import { useColorScheme } from "react-native";
 
 const HomeScreen: React.FC = () => {
   const theme = useTheme();
@@ -148,6 +150,10 @@ const HomeScreen: React.FC = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <StatusBar
+        backgroundColor={"red"}
+        barStyle="light-content"
+      />
       <Appbar.Header>
         <Appbar.Content title="Notes" />
         <Appbar.Action

@@ -8,7 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build": "expo build:android -t apk --release",
+    "prod": "npx expo start --no-dev --minify"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -54,7 +56,8 @@
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "expo-dev-client": "~5.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -62,7 +65,8 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "@react-native-community/cli": "latest"
   },
   "private": true
 }

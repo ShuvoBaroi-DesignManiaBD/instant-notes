@@ -1,11 +1,11 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from 'react-native-paper';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Platform } from "react-native";
+import { useTheme } from "react-native-paper";
 
-import { HapticTab } from '../../components/HapticTab';
-import TabBarBackground from '@/components/ui/TabBarBackground';
+import TabBarBackground from "@/components/ui/TabBarBackground";
+import { HapticTab } from "../../components/HapticTab";
 
 export default function TabLayout() {
   const theme = useTheme();
@@ -23,68 +23,89 @@ export default function TabLayout() {
           borderTopColor: theme.colors.outline,
           ...Platform.select({
             ios: {
-              position: 'absolute',
+              position: "absolute",
             },
             default: {},
           }),
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Notes',
+          title: "Notes",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Categories',
+          title: "Categories",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'folder' : 'folder-outline'} size={24} color={color} />
+            <Ionicons
+              name={focused ? "folder" : "folder-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Favorites',
+          title: "Favorites",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={24} color={color} />
+            <Ionicons
+              name={focused ? "heart" : "heart-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="reminders"
         options={{
-          title: 'Reminders',
+          title: "Reminders",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'alarm' : 'alarm-outline'} size={24} color={color} />
+            <Ionicons
+              name={focused ? "alarm" : "alarm-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'settings' : 'settings-outline'} size={24} color={color} />
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="note-editor"
         options={{
-          title: 'Edit Note',
+          title: "Edit Note",
           href: null, // Hide from tab bar
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search Notes',
+          title: "Search Notes",
           href: null, // Hide from tab bar
         }}
       />

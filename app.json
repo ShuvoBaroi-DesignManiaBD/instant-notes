@@ -10,6 +10,10 @@
     "newArchEnabled": true,
     "description": "Capture your thoughts instantly. Organize your ideas effortlessly.",
     "privacy": "public",
+    "statusBar": {
+      "style": "auto",
+      "backgroundColor": "#0072bb"
+    },
     "platforms": [
       "ios",
       "android",
@@ -27,7 +31,7 @@
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#0072bb"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "package": "com.shuvobaroi.instantnotes",
       "versionCode": 2,
       "jsEngine": "hermes",

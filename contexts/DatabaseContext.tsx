@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import * as SQLite from 'expo-sqlite';
 import { databaseService } from "../services/database";
-import { notificationService } from '../services/notifications';
 import { alarmService } from '../services/alarmService';
 import { Note, Category, Reminder } from '../types';
 

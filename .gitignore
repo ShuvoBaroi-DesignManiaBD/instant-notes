@@ -10,8 +10,17 @@ web-build/
 expo-env.d.ts
 
 # Native
-/android
-/ios
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/app/.cxx/
+/android/app/src/main/assets/
+/android/app/src/main/res/drawable-*/
+/android/app/src/main/jniLibs/
+/ios/build/
+/ios/Pods/
+/ios/*.xcworkspace
+/ios/.xcode.env.local
 .kotlin/
 *.orig.*
 *.jks

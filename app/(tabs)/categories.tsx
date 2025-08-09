@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import {
+  ActivityIndicator,
   Appbar,
   Card,
   FAB,
@@ -9,8 +11,8 @@ import {
   Text,
   Title,
   useTheme,
-  ActivityIndicator,
 } from "react-native-paper";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDatabaseContext } from "../../contexts/DatabaseContext";
 
@@ -25,6 +27,7 @@ interface Category {
 
 export default function CategoriesScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { categories, isLoading, refreshCategories } = useDatabaseContext();
 
   useEffect(() => {
@@ -33,48 +36,61 @@ export default function CategoriesScreen() {
 
   const renderCategoryCard = (category: Category) => {
     return (
-      <Card
+      <View
         key={category.id}
-        style={[
-          styles.categoryCard,
-          {
-            backgroundColor: theme.colors.surface,
-            borderLeftColor: category.color,
-          },
-        ]}
-        onPress={() => {
-              Alert.alert('Category Notes', `Viewing notes for ${category.name} - coming soon!`);
-            }}
       >
-        <Card.Content>
-          <View style={styles.categoryHeader}>
-            <View style={styles.categoryInfo}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: category.color },
-                ]}
-              >
-                <Ionicons name={category.icon as any} size={24} color="white" />
+        <Card
+          style={[
+            styles.categoryCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderLeftColor: category.color,
+            },
+          ]}
+          onPress={() => {
+            Alert.alert(
+              "Category Notes",
+              `Viewing notes for ${category.name} - coming soon!`
+            );
+          }}
+        >
+          <Card.Content>
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryInfo}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: category.color },
+                  ]}
+                >
+                  <Ionicons
+                    name={category.icon as any}
+                    size={24}
+                    color="white"
+                  />
+                </View>
+                <View style={styles.categoryDetails}>
+                  <Title style={styles.categoryTitle}>{category.name}</Title>
+                  <Text style={styles.noteCount}>
+                    {category.noteCount || 0}{" "}
+                    {(category.noteCount || 0) === 1 ? "note" : "notes"}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.categoryDetails}>
-                <Title style={styles.categoryTitle}>{category.name}</Title>
-                <Text style={styles.noteCount}>
-                  {category.noteCount || 0}{" "}
-                  {(category.noteCount || 0) === 1 ? "note" : "notes"}
-                </Text>
-              </View>
+              <IconButton
+                icon="dots-vertical"
+                size={20}
+                onPress={() => {
+                  Alert.alert(
+                    "Category Options",
+                    "Category options coming soon!"
+                  );
+                }}
+              />
             </View>
-            <IconButton
-              icon="dots-vertical"
-              size={20}
-              onPress={() => {
-                Alert.alert('Category Options', 'Category options coming soon!');
-              }}
-            />
-          </View>
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 
@@ -82,24 +98,21 @@ export default function CategoriesScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header 
+      <Appbar.Header
         style={[
           styles.modernHeader,
           {
             backgroundColor: theme.colors.primary,
             shadowColor: theme.colors.primary,
-          }
+          },
         ]}
         statusBarHeight={0}
       >
-        <Appbar.Content 
-          title="Categories" 
-          titleStyle={styles.headerTitle}
-        />
+        <Appbar.Content title="Categories" titleStyle={styles.headerTitle} />
         <Appbar.Action
           icon="sort"
           onPress={() => {
-            Alert.alert('Sort Options', 'Sort options coming soon!');
+            Alert.alert("Sort Options", "Sort options coming soon!");
           }}
           iconColor="#FFFFFF"
           style={styles.headerAction}
@@ -111,28 +124,32 @@ export default function CategoriesScreen() {
           <Text style={styles.sectionTitle}>All Categories</Text>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>Loading categories...</Text>
             </View>
           ) : categories.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="folder-outline" size={64} color={theme.colors.onSurfaceVariant} />
+              <Ionicons
+                name="folder-outline"
+                size={64}
+                color={theme.colors.onSurfaceVariant}
+              />
               <Text style={styles.emptyText}>No categories yet</Text>
-              <Text style={styles.emptySubtext}>Create your first category to organize your notes</Text>
+              <Text style={styles.emptySubtext}>
+                Create your first category to organize your notes
+              </Text>
             </View>
           ) : (
             categories.map(renderCategoryCard)
           )}
         </View>
-
-
       </ScrollView>
 
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         color="#fff"
-        onPress={() => router.push("note-editor")}
+        onPress={() => router.push("category-editor")}
       />
     </SafeAreaView>
   );
@@ -253,13 +270,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   headerAction: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 20,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 0.5,
   },
 });

@@ -8,6 +8,7 @@ import React, {
 import * as SQLite from 'expo-sqlite';
 import { databaseService } from "../services/database";
 import { notificationService } from '../services/notifications';
+import { alarmService } from '../services/alarmService';
 import { Note, Category, Reminder } from '../types';
 
 interface DatabaseContextType {
@@ -96,7 +97,7 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
         allCategories.map(async (category) => {
           let noteCount = 0;
           if (databaseService.isWeb) {
-            noteCount = notes.filter(note => note.category_id === category.id).length;
+            noteCount = notes.filter((note: Note) => note.category_id === category.id).length;
           } else {
             try {
               // Use the existing database connection from databaseService instead of creating a new one
@@ -224,8 +225,8 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
         // Mark the reminder as completed in the database
         await databaseService.markReminderCompleted(noteId);
         
-        // Cancel any scheduled notification for this reminder
-        await notificationService.cancelNotification(reminderId);
+        // Cancel any scheduled alarm for this reminder
+        await alarmService.cancelAlarm(reminderId);
         
         // Refresh notes to reflect the changes
         await refreshNotes();

@@ -1,24 +1,27 @@
-import { Image } from 'expo-image';
-import React, { useState, useEffect } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl, Alert, FlatList } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  Appbar,
-  FAB,
-  Card,
-  Title,
-  Paragraph,
-  Chip,
-  Searchbar,
-  useTheme,
-  Text,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
+import {
   ActivityIndicator,
+  Appbar,
+  Card,
+  FAB,
   IconButton,
+  Paragraph,
+  Text,
+  Title,
+  useTheme,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from '@expo/vector-icons';
-import { useDatabaseContext } from '../../contexts/DatabaseContext';
-import { Note } from '../../services/database';
+import { useDatabaseContext } from "../../contexts/DatabaseContext";
+import { Note } from "../../services/database";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -26,7 +29,8 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const { notes, isLoading, refreshNotes, deleteNote, toggleNoteFavorite } = useDatabaseContext();
+  const { notes, isLoading, refreshNotes, deleteNote, toggleNoteFavorite } =
+    useDatabaseContext();
 
   // Notes are automatically loaded by DatabaseContext
 
@@ -37,67 +41,72 @@ export default function HomeScreen() {
   }, [refreshNotes]);
 
   const handleDeleteNote = async (noteId: string | number) => {
-    Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const id = typeof noteId === 'string' ? parseInt(noteId) : noteId;
-              await deleteNote(id);
-            } catch (error) {
-              console.error('Error deleting note:', error);
-              Alert.alert('Error', 'Failed to delete note');
-            }
-          },
+    Alert.alert("Delete Note", "Are you sure you want to delete this note?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const id = typeof noteId === "string" ? parseInt(noteId) : noteId;
+            await deleteNote(id);
+          } catch (error) {
+            console.error("Error deleting note:", error);
+            Alert.alert("Error", "Failed to delete note");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleToggleFavorite = async (noteId: number) => {
     try {
       await toggleNoteFavorite(noteId);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      Alert.alert('Error', 'Failed to update favorite status');
+      console.error("Error toggling favorite:", error);
+      Alert.alert("Error", "Failed to update favorite status");
     }
   };
 
-  const filteredNotes = notes.filter(
-    (note) => {
-      const tags = note.tags ? note.tags.split(',').filter(tag => tag.trim()) : [];
-      return (
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    }
-  );
+  const filteredNotes = notes.filter((note) => {
+    const tags = note.tags
+      ? note.tags.split(",").filter((tag) => tag.trim())
+      : [];
+    return (
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  });
 
-  const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
+  const getPriorityColor = (priority: "low" | "medium" | "high") => {
     switch (priority) {
-      case 'high':
+      case "high":
         return { bg: theme.colors.errorContainer, text: theme.colors.error };
-      case 'medium':
-        return { bg: theme.colors.secondaryContainer, text: theme.colors.secondary };
-      case 'low':
-        return { bg: theme.colors.tertiaryContainer, text: theme.colors.tertiary };
+      case "medium":
+        return {
+          bg: theme.colors.secondaryContainer,
+          text: theme.colors.secondary,
+        };
+      case "low":
+        return {
+          bg: theme.colors.tertiaryContainer,
+          text: theme.colors.tertiary,
+        };
       default:
-        return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
+        return {
+          bg: theme.colors.surfaceVariant,
+          text: theme.colors.onSurfaceVariant,
+        };
     }
   };
 
   const renderNoteCard = (note: Note) => {
     const isOverdue = note.deadline && new Date() > new Date(note.deadline);
     const priorityColors = getPriorityColor(note.priority);
-    const tags = note.tags ? note.tags.split(',').filter(tag => tag.trim()) : [];
+    const tags = note.tags
+      ? note.tags.split(",").filter((tag) => tag.trim())
+      : [];
 
     return (
       <Card
@@ -106,41 +115,47 @@ export default function HomeScreen() {
           styles.noteCard,
           viewMode === "grid" ? styles.gridCard : styles.listCard,
           {
-            backgroundColor: theme.dark 
-              ? theme.colors.elevation.level2 
-              : '#ffffff',
-            borderColor: theme.dark 
-              ? theme.colors.outlineVariant 
-              : '',
-            
+            backgroundColor: theme.dark
+              ? theme.colors.elevation.level2
+              : "#ffffff",
+            borderColor: theme.dark ? theme.colors.outlineVariant : "",
+
             borderRadius: 12,
-            shadowColor: '#000000',
+            shadowColor: "#000000",
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: theme.dark ? 0.15 : 0.1,
             shadowRadius: 8,
             elevation: 4,
-          }
+          },
         ]}
         onPress={() => router.push(`note-editor?noteId=${note.id}`)}
       >
-        <Card.Content style={viewMode === "grid" ? styles.gridCardContent : styles.cardContent}>
+        <Card.Content
+          style={
+            viewMode === "grid" ? styles.gridCardContent : styles.cardContent
+          }
+        >
           {/* Card Header with Title, Favorite, and Delete Button */}
           <View style={styles.noteHeader}>
-            <Title 
+            <Title
               style={[
-                viewMode === "grid" ? styles.gridNoteTitle : styles.noteTitle, 
+                viewMode === "grid" ? styles.gridNoteTitle : styles.noteTitle,
                 { color: theme.colors.onSurface },
-                note.content.length === 0 && { fontStyle: 'italic' }
-              ]} 
+                note.content.length === 0 && { fontStyle: "italic" },
+              ]}
               numberOfLines={viewMode === "grid" ? 1 : 2}
             >
-              {note.title || 'Untitled Note'}
+              {note.title || "Untitled Note"}
             </Title>
             <View style={styles.headerButtons}>
               <IconButton
                 icon={note.is_favorite ? "heart" : "heart-outline"}
                 size={20}
-                iconColor={note.is_favorite ? theme.colors.error : theme.colors.onSurfaceVariant}
+                iconColor={
+                  note.is_favorite
+                    ? theme.colors.error
+                    : theme.colors.onSurfaceVariant
+                }
                 onPress={() => handleToggleFavorite(note.id)}
                 style={styles.favoriteButton}
               />
@@ -156,11 +171,13 @@ export default function HomeScreen() {
 
           {/* Note Content Preview */}
           {note.content && (
-            <Paragraph 
-              numberOfLines={viewMode === "grid" ? 1 : 2} 
+            <Paragraph
+              numberOfLines={viewMode === "grid" ? 1 : 2}
               style={[
-                viewMode === "grid" ? styles.gridNoteContent : styles.noteContent,
-                { color: theme.colors.onSurfaceVariant }
+                viewMode === "grid"
+                  ? styles.gridNoteContent
+                  : styles.noteContent,
+                { color: theme.colors.onSurfaceVariant },
               ]}
             >
               {note.content}
@@ -168,27 +185,45 @@ export default function HomeScreen() {
           )}
 
           {/* Divider */}
-          <View style={[
-            viewMode === "grid" ? styles.gridDivider : styles.divider,
-            { backgroundColor: theme.colors.outlineVariant }
-          ]} />
+          <View
+            style={[
+              viewMode === "grid" ? styles.gridDivider : styles.divider,
+              { backgroundColor: theme.colors.outlineVariant },
+            ]}
+          />
 
           {/* Bottom Card Section */}
-          <View style={viewMode === "grid" ? styles.gridCardFooter : styles.cardFooter}>
+          <View
+            style={
+              viewMode === "grid" ? styles.gridCardFooter : styles.cardFooter
+            }
+          >
             {/* Left Column: Category and Tags */}
-            <View style={viewMode === "grid" ? styles.gridLeftColumn : styles.leftColumn}>
+            <View
+              style={
+                viewMode === "grid" ? styles.gridLeftColumn : styles.leftColumn
+              }
+            >
               {/* Category Badge */}
               {note.category_id && (
-                <View style={viewMode === "grid" ? styles.gridCategoryContainer : styles.categoryContainer}>
-                  <Ionicons 
-                    name="folder-outline" 
-                    size={14} 
-                    color={theme.colors.primary} 
+                <View
+                  style={
+                    viewMode === "grid"
+                      ? styles.gridCategoryContainer
+                      : styles.categoryContainer
+                  }
+                >
+                  <Ionicons
+                    name="folder-outline"
+                    size={14}
+                    color={theme.colors.primary}
                   />
-                  <Text style={[
-                    styles.categoryText,
-                    { color: theme.colors.primary }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: theme.colors.primary },
+                    ]}
+                  >
                     Category
                   </Text>
                 </View>
@@ -196,29 +231,43 @@ export default function HomeScreen() {
 
               {/* Tags Section */}
               {tags.length > 0 && (
-                <View style={viewMode === "grid" ? styles.gridTagsContainer : styles.tagsContainer}>
-                  <Ionicons 
-                    name="pricetag-outline" 
-                    size={14} 
-                    color={theme.colors.secondary} 
+                <View
+                  style={
+                    viewMode === "grid"
+                      ? styles.gridTagsContainer
+                      : styles.tagsContainer
+                  }
+                >
+                  <Ionicons
+                    name="pricetag-outline"
+                    size={14}
+                    color={theme.colors.secondary}
                   />
                   <View style={styles.tagsRow}>
-                    {tags.slice(0, viewMode === "grid" ? 1 : 2).map((tag, index) => (
-                      <Text 
-                        key={`${note.id}-${index}`}
+                    {tags
+                      .slice(0, viewMode === "grid" ? 1 : 2)
+                      .map((tag, index) => (
+                        <Text
+                          key={`${note.id}-${index}`}
+                          style={[
+                            styles.tagText,
+                            { color: theme.colors.secondary },
+                          ]}
+                        >
+                          {tag}
+                          {index <
+                          Math.min(tags.length, viewMode === "grid" ? 1 : 2) - 1
+                            ? ", "
+                            : ""}
+                        </Text>
+                      ))}
+                    {tags.length > (viewMode === "grid" ? 1 : 2) && (
+                      <Text
                         style={[
-                          styles.tagText,
-                          { color: theme.colors.secondary }
+                          styles.moreTagsText,
+                          { color: theme.colors.onSurfaceVariant },
                         ]}
                       >
-                        {tag}{index < Math.min(tags.length, viewMode === "grid" ? 1 : 2) - 1 ? ', ' : ''}
-                      </Text>
-                    ))}
-                    {tags.length > (viewMode === "grid" ? 1 : 2) && (
-                      <Text style={[
-                        styles.moreTagsText,
-                        { color: theme.colors.onSurfaceVariant }
-                      ]}>
                         +{tags.length - (viewMode === "grid" ? 1 : 2)}
                       </Text>
                     )}
@@ -228,61 +277,89 @@ export default function HomeScreen() {
             </View>
 
             {/* Right Column: Priority and Deadline */}
-            <View style={viewMode === "grid" ? styles.gridRightColumn : styles.rightColumn}>
+            <View
+              style={
+                viewMode === "grid"
+                  ? styles.gridRightColumn
+                  : styles.rightColumn
+              }
+            >
               {/* Priority Badge */}
-              <View 
+              <View
                 style={[
-                  viewMode === "grid" ? styles.gridPriorityBadge : styles.priorityBadge, 
+                  viewMode === "grid"
+                    ? styles.gridPriorityBadge
+                    : styles.priorityBadge,
                   {
                     backgroundColor: priorityColors.bg,
                     borderColor: priorityColors.text,
                     borderWidth: 1,
-                  }
+                  },
                 ]}
               >
-                <Ionicons 
-                  name={note.priority === "high" ? "alert-circle" : note.priority === "medium" ? "alert" : "checkmark-circle"} 
-                  size={viewMode === "grid" ? 10 : 12} 
-                  color={priorityColors.text} 
+                <Ionicons
+                  name={
+                    note.priority === "high"
+                      ? "alert-circle"
+                      : note.priority === "medium"
+                      ? "alert"
+                      : "checkmark-circle"
+                  }
+                  size={viewMode === "grid" ? 10 : 12}
+                  color={priorityColors.text}
                 />
-                <Text style={[
-                  viewMode === "grid" ? styles.gridPriorityText : styles.priorityText, 
-                  {color: priorityColors.text}
-                ]}>
+                <Text
+                  style={[
+                    viewMode === "grid"
+                      ? styles.gridPriorityText
+                      : styles.priorityText,
+                    { color: priorityColors.text },
+                  ]}
+                >
                   {note.priority.toUpperCase()}
                 </Text>
               </View>
 
               {/* Deadline Badge */}
               {note.deadline && (
-                <View 
+                <View
                   style={[
-                    viewMode === "grid" ? styles.gridDeadlineBadge : styles.deadlineBadge,
+                    viewMode === "grid"
+                      ? styles.gridDeadlineBadge
+                      : styles.deadlineBadge,
                     {
-                      backgroundColor: isOverdue 
-                        ? theme.colors.errorContainer 
+                      backgroundColor: isOverdue
+                        ? theme.colors.errorContainer
                         : theme.colors.secondaryContainer,
-                      borderColor: isOverdue 
-                        ? theme.colors.error 
+                      borderColor: isOverdue
+                        ? theme.colors.error
                         : theme.colors.secondary,
                       borderWidth: 1,
-                    }
+                    },
                   ]}
                 >
-                  <Ionicons 
-                    name="calendar-outline" 
-                    size={viewMode === "grid" ? 10 : 12} 
-                    color={isOverdue ? theme.colors.error : theme.colors.secondary} 
+                  <Ionicons
+                    name="calendar-outline"
+                    size={viewMode === "grid" ? 10 : 12}
+                    color={
+                      isOverdue ? theme.colors.error : theme.colors.secondary
+                    }
                   />
-                  <Text 
+                  <Text
                     style={[
-                      viewMode === "grid" ? styles.gridDeadlineText : styles.deadlineText,
-                      {color: isOverdue ? theme.colors.error : theme.colors.secondary}
+                      viewMode === "grid"
+                        ? styles.gridDeadlineText
+                        : styles.deadlineText,
+                      {
+                        color: isOverdue
+                          ? theme.colors.error
+                          : theme.colors.secondary,
+                      },
                     ]}
                   >
-                    {new Date(note.deadline).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
+                    {new Date(note.deadline).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
                     })}
                   </Text>
                 </View>
@@ -298,7 +375,7 @@ export default function HomeScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Appbar.Header 
+      <Appbar.Header
         style={[
           styles.modernHeader,
           {
@@ -306,14 +383,11 @@ export default function HomeScreen() {
             shadowColor: theme.colors.primary,
             // borderBottomEndRadius: 60,
             // borderBottomStartRadius: 60,
-          }
+          },
         ]}
         statusBarHeight={0}
       >
-        <Appbar.Content 
-          title="Notes" 
-          titleStyle={styles.headerTitle}
-        />
+        <Appbar.Content title="Notes" titleStyle={styles.headerTitle} />
         <Appbar.Action
           icon={viewMode === "list" ? "view-grid" : "view-list"}
           onPress={() => setViewMode(viewMode === "list" ? "grid" : "list")}
@@ -328,45 +402,41 @@ export default function HomeScreen() {
         />
       </Appbar.Header>
 
-
-
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>Loading notes...</Text>
         </View>
-      ) : (
-        filteredNotes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="document-text-outline"
-              size={64}
-              color={theme.colors.onSurfaceVariant}
-            />
-            <Text style={styles.emptyStateText}>
-              {searchQuery ? "No notes found" : "No notes yet"}
-            </Text>
-            <Text style={styles.emptyStateSubtext}>
-              {searchQuery
-                ? "Try adjusting your search terms"
-                : "Tap the + button to create your first note"}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredNotes}
-            style={styles.content}
-            renderItem={({ item }) => renderNoteCard(item)}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={viewMode === "grid" ? 2 : 1}
-            key={viewMode} // Force re-render when viewMode changes
-            contentContainerStyle={styles.content}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            columnWrapperStyle={viewMode === "grid" ? styles.gridRow : undefined}
+      ) : filteredNotes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons
+            name="document-text-outline"
+            size={64}
+            color={theme.colors.onSurfaceVariant}
           />
-        )
+          <Text style={styles.emptyStateText}>
+            {searchQuery ? "No notes found" : "No notes yet"}
+          </Text>
+          <Text style={styles.emptyStateSubtext}>
+            {searchQuery
+              ? "Try adjusting your search terms"
+              : "Tap the + button to create your first note"}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredNotes}
+          style={styles.content}
+          renderItem={({ item }) => renderNoteCard(item)}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={viewMode === "grid" ? 2 : 1}
+          key={viewMode} // Force re-render when viewMode changes
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          columnWrapperStyle={viewMode === "grid" ? styles.gridRow : undefined}
+        />
       )}
 
       <FAB
@@ -393,7 +463,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 6,
-    paddingVertical: 6
+    paddingVertical: 6,
   },
   noteCard: {
     borderRadius: 12,
@@ -406,12 +476,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginVertical: 6,
     marginHorizontal: 4,
-    maxWidth: '48%',
+    maxWidth: "48%",
   },
   gridRow: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     paddingHorizontal: 0,
-    gap:6
+    gap: 6,
   },
   cardContent: {
     padding: 16,
@@ -480,13 +550,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   gridCardFooter: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
+    flexDirection: "column",
+    alignItems: "stretch",
   },
   leftColumn: {
     flex: 1,
@@ -495,37 +565,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   rightColumn: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   gridRightColumn: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   categoryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   gridCategoryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   categoryText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 4,
   },
   tagsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   gridTagsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'nowrap',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
   },
   tagsRow: {
     flexDirection: "row",
@@ -535,24 +605,24 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   moreTagsText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 4,
   },
   priorityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     marginBottom: 6,
   },
   gridPriorityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -560,36 +630,36 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 4,
   },
   gridPriorityText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 2,
   },
   deadlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
   gridDeadlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
   deadlineText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 4,
   },
   gridDeadlineText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: "700",
     marginLeft: 2,
   },
   emptyState: {
@@ -624,13 +694,13 @@ const styles = StyleSheet.create({
     // borderBottomRightRadius: 30,
   },
   headerAction: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 20,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 0.5,
   },
 });

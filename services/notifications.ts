@@ -84,6 +84,7 @@ class NotificationService {
       // Only schedule if notification is enabled and due date is in the future
       if (reminder.notificationEnabled && reminder.dueDate > new Date()) {
         const notificationId = await Notifications.scheduleNotificationAsync({
+          identifier: reminder.id, // Use reminder ID as identifier for easy cancellation
           content: {
             title: reminder.title,
             body: reminder.description || 'Reminder for your note',

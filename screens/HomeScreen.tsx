@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
 import {
   Appbar,
   Card,
@@ -15,8 +21,6 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Note } from "../types";
-import { StatusBar } from "react-native";
-import { useColorScheme } from "react-native";
 
 const HomeScreen: React.FC = () => {
   const theme = useTheme();
@@ -150,10 +154,7 @@ const HomeScreen: React.FC = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <StatusBar
-        backgroundColor={"red"}
-        barStyle="light-content"
-      />
+      <StatusBar backgroundColor={"red"} barStyle="light-content" />
       <Appbar.Header>
         <Appbar.Content title="Notes" />
         <Appbar.Action

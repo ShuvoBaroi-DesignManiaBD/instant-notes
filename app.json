@@ -9,11 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "Capture your thoughts instantly. Organize your ideas effortlessly.",
-    "privacy": "public",
-    "statusBar": {
-      "style": "auto",
-      "backgroundColor": "#0072bb"
-    },
+
     "platforms": [
       "ios",
       "android",
@@ -33,13 +29,9 @@
       },
       "edgeToEdgeEnabled": false,
       "package": "com.shuvobaroi.instantnotes",
-      "versionCode": 2,
-      "jsEngine": "hermes",
-      "enableProguardInReleaseBuilds": true,
-      "permissions": [
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_EXTERNAL_STORAGE"
-      ]
+      "versionCode": 3,
+      "jsEngine": "hermes"
+
     },
     "web": {
       "bundler": "metro",
@@ -48,17 +40,9 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

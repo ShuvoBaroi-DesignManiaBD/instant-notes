@@ -5,7 +5,7 @@
   },
   "build": {
     "development": {
-      "developmentClient": true,
+      "developmentClient": false,
       "distribution": "internal"
     },
     "preview": {
@@ -19,6 +19,7 @@
       }
     },
     "production": {
+      "developmentClient": false,
       "android": {
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"

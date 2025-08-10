@@ -4,7 +4,7 @@ import React from "react";
 import { Platform } from "react-native";
 import { useTheme } from "react-native-paper";
 
-import TabBarBackground from "@/components/ui/TabBarBackground";
+import TabBarBackground from "../../components/ui/TabBarBackground";
 import { HapticTab } from "../../components/HapticTab";
 
 export default function TabLayout() {

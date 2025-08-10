@@ -2,7 +2,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { StyleSheet, ScrollView, View } from 'react-native';
 
 import { ThemedView } from '@/components/ThemedView';
-import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
+import { useBottomTabOverflow } from '../components/ui/TabBarBackground';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const HEADER_HEIGHT = 250;

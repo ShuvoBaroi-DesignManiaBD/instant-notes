@@ -10,7 +10,6 @@ import {
   Searchbar,
   Text,
   useTheme,
-  ActivityIndicator,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDatabaseContext } from "../../contexts/DatabaseContext";

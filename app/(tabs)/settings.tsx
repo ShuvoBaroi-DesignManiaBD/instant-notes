@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { ScrollView, StyleSheet, View, Alert, Linking, Pressable } from "react-native";
 import {
   Appbar,
-  Button,
   Card,
   Divider,
   List,

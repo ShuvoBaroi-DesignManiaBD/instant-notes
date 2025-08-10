@@ -12,9 +12,7 @@ import {
   Text,
   useTheme,
   Divider,
-  Button,
 } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface RichTextEditorProps {
   value: string;

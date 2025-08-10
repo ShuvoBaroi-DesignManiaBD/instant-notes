@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDatabaseContext } from "../../contexts/DatabaseContext";
 import { alarmService } from "../../services/alarmService";
-import { databaseService } from "../../services/database";
+import { databaseService, Note } from "../../services/database";
 import { Reminder } from "../../types";
 
 // Using the Reminder interface from types/index.ts
@@ -69,7 +69,7 @@ export default function RemindersScreen() {
   // Sync reminders table with notes that have reminder dates
   const syncRemindersWithNotes = async () => {
     try {
-      const notesWithReminders = notes.filter((note as Note) => note?.reminder);
+      const notesWithReminders = notes.filter((note: Note) => !!note.reminder);
 
       for (const note of notesWithReminders) {
         // Check if reminder already exists for this note

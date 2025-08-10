@@ -21,7 +21,7 @@ interface AlarmScreenProps {
   onSnooze: (minutes: number) => void;
 }
 
-const { width, height } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
 const AlarmScreen: React.FC<AlarmScreenProps> = ({
   reminder,

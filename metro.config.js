@@ -1,5 +1,8 @@
-const { getDefaultConfig } = require('expo/metro-config');
+const {
+  getDefaultConfig
+} = require('expo/metro-config');
 
+const path = require('path');
 const config = getDefaultConfig(__dirname);
 
 // Add WASM support and handle SQLite web issues
@@ -16,14 +19,14 @@ config.resolver.alias = {
   ...config.resolver.alias,
   // Provide a fallback for SQLite on web
   'expo-sqlite': require.resolve('expo-sqlite'),
+  '@': path.resolve(__dirname),
 };
 
 // Configure path mapping for @ alias
-const path = require('path');
-config.resolver.alias = {
-  ...config.resolver.alias,
-  '@': path.resolve(__dirname),
-};
+// config.resolver.alias = {
+//   ...config.resolver.alias,
+//   '@': path.resolve(__dirname),
+// };
 
 // Optimization settings for production builds
 config.transformer = {

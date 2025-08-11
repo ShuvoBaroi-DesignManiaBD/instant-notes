@@ -14,8 +14,8 @@ module.exports = function (api) {
           extensions: ['.ios.js', '.android.js', '.js', '.ts', '.tsx', '.json'],
         },
       ],
-      // Keep Expo Router Babel plugin if you decide to add it later:
-      // 'expo-router/babel',
+      // Expo Router plugin is required when using expo-router/entry
+      'expo-router/babel',
     ],
   };
 };
